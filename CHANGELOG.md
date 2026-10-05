@@ -1,4 +1,4 @@
-## [0.1.3] - 2026-10-05
+## [0.1.5] - 2026-10-05
 
 ### Adicionado
 
@@ -12,3 +12,4 @@
 - Dependências Linux ausentes no job Rust do CI.
 - Versões do frontend, backend e Tauri alinhadas.
 - Publicação do manifesto `latest.json`.
+- Fixture `fake-adb` dos testes de integração agora usa diretórios temporários únicos, evitando falhas paralelas de `Text file busy`.

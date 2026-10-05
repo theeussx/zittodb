@@ -4,6 +4,7 @@
 //! we use (devices, getprop, shell). Security tests assert that malformed
 //! inputs are rejected BEFORE any process is spawned.
 
+use std::sync::atomic::{AtomicUsize, Ordering};
 use zittodb_lib::adb::operations::DeviceOperation;
 use zittodb_lib::adb::parse;
 use zittodb_lib::error::ErrorCode;
@@ -11,8 +12,11 @@ use zittodb_lib::processes;
 use zittodb_lib::scrcpy::ScrcpyOptions;
 use zittodb_lib::security;
 
+static FAKE_ADB_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
 fn fake_adb() -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("zittodb-it-{}", std::process::id()));
+    let id = FAKE_ADB_COUNTER.fetch_add(1, Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("zittodb-it-{}-{id}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let fake = dir.join("fake-adb");
     let content = r#"#!/bin/sh
