@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
   contents: write
@@ -16,15 +16,19 @@ jobs:
   publish:
     name: Publish Linux release
     runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Linux dependencies
         run: |
@@ -36,7 +40,8 @@ jobs:
             librsvg2-dev \
             patchelf
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build and publish signed artifacts
         uses: tauri-apps/tauri-action@v0
@@ -45,8 +50,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: v__VERSION__
-          releaseName: Zittodb v__VERSION__
+          tagName: ${{ github.ref_name }}
+          releaseName: Zittodb ${{ github.ref_name }}
           releaseBody: Consulte o CHANGELOG para ver as alterações desta versão.
           releaseDraft: false
           prerelease: false

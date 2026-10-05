@@ -1,7 +1,7 @@
 {
   "name": "zittodb",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "Zittodb — Android Debug Bridge, direto e local. Toolkit gráfico e leve para ADB, scrcpy e fastboot no Linux.",
   "keywords": [
     "adb",

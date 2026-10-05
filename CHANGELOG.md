@@ -1,14 +1,14 @@
-# Changelog
+## [0.1.3] - 2026-10-05
 
-Todas as mudanças relevantes do Zittodb serão registradas neste arquivo.
+### Adicionado
 
-## [Unreleased]
+- Atualização automática do aplicativo via Tauri Updater.
+- Releases assinadas no GitHub.
+- Pipeline de CI para frontend e Rust.
+- Geração automática de AppImage e pacote `.deb`.
 
-- Preparado CI com validação frontend, Rust e auditoria de dependências.
-- Adicionado updater Tauri com artefatos assinados e instalação explícita.
-- Corrigidos links e referências do repositório para `theeussx/zittodb`.
-- Adicionado pipeline de release para AppImage, `.deb` e `latest.json`.
+### Corrigido
 
-## [0.1.0]
-
-- Primeira versão pública do Zittodb.
+- Dependências Linux ausentes no job Rust do CI.
+- Versões do frontend, backend e Tauri alinhadas.
+- Publicação do manifesto `latest.json`.
