@@ -22,9 +22,9 @@ use crate::security::{validate_bitrate, validate_local_path, validate_serial};
 pub const MIN_ANDROID_15_VERSION: (u32, u32, u32) = (3, 2, 0);
 
 pub fn parse_version(text: &str) -> Option<(u32, u32, u32)> {
-    let token = text
-        .split_whitespace()
-        .find(|part| part.starts_with('v') || part.chars().next().is_some_and(|c| c.is_ascii_digit()))?;
+    let token = text.split_whitespace().find(|part| {
+        part.starts_with('v') || part.chars().next().is_some_and(|c| c.is_ascii_digit())
+    })?;
     let token = token.trim_start_matches('v');
     let mut parts = token.split('.').map(|part| {
         part.chars()
@@ -33,7 +33,11 @@ pub fn parse_version(text: &str) -> Option<(u32, u32, u32)> {
             .parse::<u32>()
             .ok()
     });
-    Some((parts.next()??, parts.next().unwrap_or(Some(0))?, parts.next().unwrap_or(Some(0))?))
+    Some((
+        parts.next()??,
+        parts.next().unwrap_or(Some(0))?,
+        parts.next().unwrap_or(Some(0))?,
+    ))
 }
 
 pub fn supports_android_15(version: (u32, u32, u32)) -> bool {

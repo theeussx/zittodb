@@ -9,7 +9,9 @@ use tauri::State;
 use crate::adb::ToolKind;
 use crate::error::{AppError, ErrorCode};
 use crate::processes::{run_captured, spawn_streamed};
-use crate::scrcpy::{parse_version, supports_android_15, ScrcpyOptions, ScrcpyStatus, MIN_ANDROID_15_VERSION};
+use crate::scrcpy::{
+    parse_version, supports_android_15, ScrcpyOptions, ScrcpyStatus, MIN_ANDROID_15_VERSION,
+};
 use crate::security::validate_serial;
 
 use super::{media, AppState};
@@ -56,7 +58,11 @@ fn is_android_15_or_newer(adb_bin: &str, serial: &str) -> bool {
     let Ok(output) = run_captured(adb_bin, &args, std::time::Duration::from_secs(5)) else {
         return false;
     };
-    output.text().trim().parse::<u32>().is_ok_and(|sdk| sdk >= 35)
+    output
+        .text()
+        .trim()
+        .parse::<u32>()
+        .is_ok_and(|sdk| sdk >= 35)
 }
 
 #[tauri::command]

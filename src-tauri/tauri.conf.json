@@ -28,6 +28,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["appimage", "deb"],
     "category": "DeveloperTool",
     "shortDescription": "Android Debug Bridge, direto e local",
@@ -37,5 +38,13 @@
       "icons/128x128.png",
       "icons/icon.png"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
+      "endpoints": [
+        "https://github.com/theeussx/zittodb/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

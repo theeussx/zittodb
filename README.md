@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/theeussx/wadb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-3ddc84?style=flat-square&labelColor=0e1116" /></a>
+  <a href="https://github.com/theeussx/zittodb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-3ddc84?style=flat-square&labelColor=0e1116" /></a>
   <a href="LICENSE"><img alt="Licença" src="https://img.shields.io/badge/license-MIT-2aa862?style=flat-square&labelColor=0e1116" /></a>
   <img alt="Plataforma" src="https://img.shields.io/badge/platform-Linux%20(amd64)-4da3ff?style=flat-square&labelColor=0e1116" />
   <img alt="Stack" src="https://img.shields.io/badge/Tauri%202%20%C2%B7%20Rust%20%C2%B7%20React-f5a623?style=flat-square&labelColor=0e1116" />
@@ -147,7 +147,7 @@ Você clica  →  frontend envia uma operação tipada  →  Rust valida e monta
 ## Instalação
 
 **Usuário final:** baixe o `.AppImage` ou o `.deb` na página de
-[Releases](https://github.com/theeussx/wadb/releases) — não é preciso compilar nada.
+[Releases](https://github.com/theeussx/zittodb/releases) — não é preciso compilar nada.
 
 ```bash
 # AppImage
@@ -159,6 +159,12 @@ sudo apt install ./*.deb
 
 Para compilar a partir do código, veja [Uso](#uso) e
 [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
+As releases oficiais incluem artefatos assinados e `latest.json`. No aplicativo
+desktop, o Zittodb verifica automaticamente se existe uma versão mais nova e
+oferece **Instalar agora** no próprio banner; não é necessário recompilar o
+projeto localmente para receber atualizações. O fluxo de publicação está em
+[`docs/RELEASING.md`](docs/RELEASING.md).
 
 ---
 

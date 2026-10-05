@@ -17,6 +17,8 @@ const ptBR: Record<string, string> = {
   'app.tagline': 'Android Debug Bridge, direto e local.',
   'updates.available': 'Nova versão disponível: v{version}',
   'updates.viewRelease': 'Ver release',
+  'updates.install': 'Instalar agora',
+  'updates.installing': 'Atualizando… {progress}%',
   'updates.dismiss': 'Dispensar',
 
   // ---- tools status ----

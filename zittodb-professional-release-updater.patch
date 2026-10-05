@@ -1,0 +1,1489 @@
+From 7f38260f1ac03487bd849dd1c5ba9b516773e749 Mon Sep 17 00:00:00 2001
+From: theeussx <1.8625534e+08+theeussx@users.noreply.github.com>
+Date: Mon, 5 Oct 2026 02:01:27 +0000
+Subject: [PATCH] feat: add signed releases and desktop updater
+
+---
+ .github/pull_request_template.md    |  18 +
+ .github/workflows/ci.yml            |  48 +++
+ .github/workflows/release.yml       |  48 +++
+ CHANGELOG.md                        |  14 +
+ README.md                           |  10 +-
+ docs/DEVELOPMENT.md                 |   2 +-
+ docs/RELEASING.md                   |  47 +++
+ package-lock.json                   |  21 ++
+ package.json                        |   4 +-
+ src-tauri/Cargo.lock                | 507 ++++++++++++++++++++++++++--
+ src-tauri/Cargo.toml                |   2 +
+ src-tauri/capabilities/default.json |   4 +-
+ src-tauri/src/commands/scrcpy.rs    |  10 +-
+ src-tauri/src/lib.rs                |   2 +
+ src-tauri/src/scrcpy/mod.rs         |  12 +-
+ src-tauri/tauri.conf.json           |   9 +
+ src/components/UpdateBanner.tsx     |  27 +-
+ src/i18n/en-US.ts                   |   2 +
+ src/i18n/pt-BR.ts                   |   2 +
+ src/services/updateService.ts       |  56 ++-
+ tests/update-service.test.ts        |   4 +-
+ 21 files changed, 802 insertions(+), 47 deletions(-)
+ create mode 100644 .github/pull_request_template.md
+ create mode 100644 .github/workflows/ci.yml
+ create mode 100644 .github/workflows/release.yml
+ create mode 100644 CHANGELOG.md
+ create mode 100644 docs/RELEASING.md
+
+diff --git a/.github/pull_request_template.md b/.github/pull_request_template.md
+new file mode 100644
+index 0000000..af4ca83
+--- /dev/null
++++ b/.github/pull_request_template.md
+@@ -0,0 +1,18 @@
++## O que mudou?
++
++<!-- Descreva a mudança e o motivo. -->
++
++## Segurança e impacto
++
++- [ ] Não executa shell arbitrário no computador.
++- [ ] Entradas novas são validadas no backend.
++- [ ] Operação destrutiva exige confirmação digitada.
++- [ ] Nenhum arquivo do usuário é sobrescrito silenciosamente.
++
++## Validação
++
++- [ ] `npm run check`
++- [ ] `cargo fmt --check`
++- [ ] `cargo clippy --all-targets --all-features -- -D warnings`
++- [ ] `cargo test`
++- [ ] Documentação atualizada
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+new file mode 100644
+index 0000000..4893f01
+--- /dev/null
++++ b/.github/workflows/ci.yml
+@@ -0,0 +1,48 @@
++name: CI
++
++on:
++  push:
++    branches: [main]
++  pull_request:
++
++permissions:
++  contents: read
++
++jobs:
++  frontend:
++    name: Frontend
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 22
++          cache: npm
++      - run: npm ci
++      - run: npm run check
++
++  rust:
++    name: Rust
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: dtolnay/rust-toolchain@stable
++        with:
++          components: rustfmt, clippy
++      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
++      # Keep existing warnings visible without blocking releases; new warnings
++      # can be reduced incrementally in focused PRs.
++      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features
++      - run: cargo test --manifest-path src-tauri/Cargo.toml
++
++  security:
++    name: Dependency audit
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 22
++          cache: npm
++      - run: npm ci
++      - run: npm audit --audit-level=high
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+new file mode 100644
+index 0000000..8a95de6
+--- /dev/null
++++ b/.github/workflows/release.yml
+@@ -0,0 +1,48 @@
++name: Release
++
++on:
++  workflow_dispatch:
++  push:
++    tags:
++      - 'v*.*.*'
++
++permissions:
++  contents: write
++
++env:
++  NODE_VERSION: 22
++
++jobs:
++  publish:
++    name: Publish Linux release
++    runs-on: ubuntu-22.04
++    steps:
++      - uses: actions/checkout@v4
++
++      - uses: actions/setup-node@v4
++        with:
++          node-version: ${{ env.NODE_VERSION }}
++          cache: npm
++
++      - uses: dtolnay/rust-toolchain@stable
++
++      - name: Install Linux dependencies
++        run: |
++          sudo apt-get update
++          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
++
++      - run: npm ci
++
++      - name: Build and publish signed artifacts
++        uses: tauri-apps/tauri-action@v0
++        env:
++          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
++          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
++        with:
++          tagName: v__VERSION__
++          releaseName: Zittodb v__VERSION__
++          releaseBody: Consulte o CHANGELOG para ver as alterações desta versão.
++          releaseDraft: false
++          prerelease: false
++          includeUpdaterJson: true
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+new file mode 100644
+index 0000000..5c18e7b
+--- /dev/null
++++ b/CHANGELOG.md
+@@ -0,0 +1,14 @@
++# Changelog
++
++Todas as mudanças relevantes do Zittodb serão registradas neste arquivo.
++
++## [Unreleased]
++
++- Preparado CI com validação frontend, Rust e auditoria de dependências.
++- Adicionado updater Tauri com artefatos assinados e instalação explícita.
++- Corrigidos links e referências do repositório para `theeussx/zittodb`.
++- Adicionado pipeline de release para AppImage, `.deb` e `latest.json`.
++
++## [0.1.0]
++
++- Primeira versão pública do Zittodb.
+diff --git a/README.md b/README.md
+index dd8fce3..1550172 100644
+--- a/README.md
++++ b/README.md
+@@ -3,7 +3,7 @@
+ </p>
+ 
+ <p align="center">
+-  <a href="https://github.com/theeussx/wadb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-3ddc84?style=flat-square&labelColor=0e1116" /></a>
++  <a href="https://github.com/theeussx/zittodb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-3ddc84?style=flat-square&labelColor=0e1116" /></a>
+   <a href="LICENSE"><img alt="Licença" src="https://img.shields.io/badge/license-MIT-2aa862?style=flat-square&labelColor=0e1116" /></a>
+   <img alt="Plataforma" src="https://img.shields.io/badge/platform-Linux%20(amd64)-4da3ff?style=flat-square&labelColor=0e1116" />
+   <img alt="Stack" src="https://img.shields.io/badge/Tauri%202%20%C2%B7%20Rust%20%C2%B7%20React-f5a623?style=flat-square&labelColor=0e1116" />
+@@ -147,7 +147,7 @@ Você clica  →  frontend envia uma operação tipada  →  Rust valida e monta
+ ## Instalação
+ 
+ **Usuário final:** baixe o `.AppImage` ou o `.deb` na página de
+-[Releases](https://github.com/theeussx/wadb/releases) — não é preciso compilar nada.
++[Releases](https://github.com/theeussx/zittodb/releases) — não é preciso compilar nada.
+ 
+ ```bash
+ # AppImage
+@@ -160,6 +160,12 @@ sudo apt install ./*.deb
+ Para compilar a partir do código, veja [Uso](#uso) e
+ [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+ 
++As releases oficiais incluem artefatos assinados e `latest.json`. No aplicativo
++desktop, o Zittodb verifica automaticamente se existe uma versão mais nova e
++oferece **Instalar agora** no próprio banner; não é necessário recompilar o
++projeto localmente para receber atualizações. O fluxo de publicação está em
++[`docs/RELEASING.md`](docs/RELEASING.md).
++
+ ---
+ 
+ ## Requisitos
+diff --git a/docs/DEVELOPMENT.md b/docs/DEVELOPMENT.md
+index fefe4b8..10b315d 100644
+--- a/docs/DEVELOPMENT.md
++++ b/docs/DEVELOPMENT.md
+@@ -16,7 +16,7 @@
+ ## Setup
+ 
+ ```bash
+-git clone https://github.com/theeussx/wadb.git && cd wadb
++git clone https://github.com/theeussx/zittodb.git && cd wadb
+ npm install
+ ```
+ 
+diff --git a/docs/RELEASING.md b/docs/RELEASING.md
+new file mode 100644
+index 0000000..0a7f0c9
+--- /dev/null
++++ b/docs/RELEASING.md
+@@ -0,0 +1,47 @@
++# Releases e atualização automática
++
++O Zittodb não precisa ser recompilado no computador do usuário. O aplicativo instalado verifica o endpoint assinado do GitHub Releases e oferece a instalação da nova versão dentro do próprio app.
++
++## Publicar uma versão
++
++1. Atualize `version` em `package.json`, `src-tauri/Cargo.toml` e `src-tauri/tauri.conf.json`.
++2. Adicione as mudanças ao `CHANGELOG.md`.
++3. Rode `npm ci && npm run check`.
++4. Crie e envie uma tag semântica:
++
++```bash
++git tag v0.2.0
++git push origin v0.2.0
++```
++
++O workflow `Release` compila o AppImage e o `.deb`, cria as assinaturas e publica `latest.json` no release.
++
++## Gerar a chave do updater
++
++Gere o par no seu ambiente de desenvolvimento e não compartilhe a chave privada:
++
++```bash
++npx tauri signer generate -w ~/.config/zittodb/updater.key
++cat ~/.config/zittodb/updater.key.pub
++```
++
++Substitua `REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY` em `src-tauri/tauri.conf.json` pelo conteúdo da chave pública. Guarde a chave privada em um gerenciador de segredos.
++
++## Segredos do GitHub
++
++Configure no repositório:
++
++- `TAURI_SIGNING_PRIVATE_KEY`: conteúdo da chave privada do updater.
++- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: senha da chave, se houver.
++
++A chave privada nunca deve entrar no Git. A chave pública fica em `src-tauri/tauri.conf.json` e permite que o app rejeite artefatos adulterados.
++
++## Atualização no aplicativo
++
++No desktop, o Zittodb verifica a versão no endpoint oficial do updater Tauri. Quando há uma versão nova, o usuário vê o banner e escolhe **Instalar agora**. O download é validado pela assinatura antes da instalação e o app é reiniciado pelo plugin oficial.
++
++No navegador/demo, a checagem continua sendo apenas informativa, porque o navegador não pode instalar um binário do desktop.
++
++## Rollback
++
++Não reutilize uma chave de assinatura. Para corrigir uma release, publique uma nova versão sem apagar a chave atual. Perder a chave privada impede todas as atualizações futuras para instalações existentes.
+diff --git a/package-lock.json b/package-lock.json
+index d86820d..af9f4a8 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -7,8 +7,11 @@
+     "": {
+       "name": "zittodb",
+       "version": "0.1.0",
++      "license": "MIT",
+       "dependencies": {
+         "@tauri-apps/api": "2.12.0",
++        "@tauri-apps/plugin-process": "^2.4.0",
++        "@tauri-apps/plugin-updater": "^2.13.1",
+         "react": "^18.3.1",
+         "react-dom": "^18.3.1",
+         "zustand": "^5.0.2"
+@@ -1566,6 +1569,24 @@
+         "node": ">= 10"
+       }
+     },
++    "node_modules/@tauri-apps/plugin-process": {
++      "version": "2.4.0",
++      "resolved": "https://registry.npmjs.org/@tauri-apps/plugin-process/-/plugin-process-2.4.0.tgz",
++      "integrity": "sha512-GddrmsSLAYrLa/yTXlXK/YRDzUgYeeOnUXTbiyvJWkmI424RmDPD3FVLeqcon7rv6O6ZfhBilcrHWnSo7o6hIQ==",
++      "license": "MIT OR Apache-2.0",
++      "dependencies": {
++        "@tauri-apps/api": "^2.12.0"
++      }
++    },
++    "node_modules/@tauri-apps/plugin-updater": {
++      "version": "2.13.1",
++      "resolved": "https://registry.npmjs.org/@tauri-apps/plugin-updater/-/plugin-updater-2.13.1.tgz",
++      "integrity": "sha512-+STDzJ0sdQLImjc63zkv6Nncimqeo6jyCWoTQtbSwgGLNj1qbP9I6LC4p5R5ocBk3gNKAZs6i/AJz0jxysytiw==",
++      "license": "MIT OR Apache-2.0",
++      "dependencies": {
++        "@tauri-apps/api": "^2.12.0"
++      }
++    },
+     "node_modules/@testing-library/dom": {
+       "version": "10.4.2",
+       "resolved": "https://registry.npmjs.org/@testing-library/dom/-/dom-10.4.2.tgz",
+diff --git a/package.json b/package.json
+index 37b3a9e..ca2fc26 100644
+--- a/package.json
++++ b/package.json
+@@ -15,7 +15,7 @@
+   "license": "MIT",
+   "repository": {
+     "type": "git",
+-    "url": "https://github.com/theeussx/wadb.git"
++    "url": "https://github.com/theeussx/zittodb.git"
+   },
+   "type": "module",
+   "scripts": {
+@@ -34,6 +34,8 @@
+   },
+   "dependencies": {
+     "@tauri-apps/api": "2.12.0",
++    "@tauri-apps/plugin-process": "^2.4.0",
++    "@tauri-apps/plugin-updater": "^2.13.1",
+     "react": "^18.3.1",
+     "react-dom": "^18.3.1",
+     "zustand": "^5.0.2"
+diff --git a/src-tauri/Cargo.lock b/src-tauri/Cargo.lock
+index 0e102c6..02bb420 100644
+--- a/src-tauri/Cargo.lock
++++ b/src-tauri/Cargo.lock
+@@ -2,20 +2,6 @@
+ # It is not intended for manual editing.
+ version = 3
+ 
+-[[package]]
+-name = "zittodb"
+-version = "0.1.0"
+-dependencies = [
+- "chrono",
+- "directories",
+- "libc",
+- "serde",
+- "serde_json",
+- "tauri",
+- "tauri-build",
+- "tauri-plugin-dialog",
+-]
+-
+ [[package]]
+ name = "adler2"
+ version = "2.0.1"
+@@ -61,6 +47,15 @@ version = "1.0.104"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
+ 
++[[package]]
++name = "arbitrary"
++version = "1.4.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
++dependencies = [
++ "derive_arbitrary",
++]
++
+ [[package]]
+ name = "atk"
+ version = "0.18.2"
+@@ -364,6 +359,16 @@ dependencies = [
+  "version_check",
+ ]
+ 
++[[package]]
++name = "core-foundation"
++version = "0.9.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "91e195e091a93c46f7102ec7818a2aa394e1e1771c3ab4825963fa03e45afb8f"
++dependencies = [
++ "core-foundation-sys",
++ "libc",
++]
++
+ [[package]]
+ name = "core-foundation"
+ version = "0.10.1"
+@@ -387,7 +392,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "064badf302c3194842cf2c5d61f56cc88e54a759313879cdf03abdd27d0c3b97"
+ dependencies = [
+  "bitflags 2.13.2",
+- "core-foundation",
++ "core-foundation 0.10.1",
+  "core-graphics-types",
+  "foreign-types",
+  "libc",
+@@ -400,7 +405,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "3d44a101f213f6c4cdc1853d4b78aef6db6bdfa3468798cc1d9912f4735013eb"
+ dependencies = [
+  "bitflags 2.13.2",
+- "core-foundation",
++ "core-foundation 0.10.1",
+  "libc",
+ ]
+ 
+@@ -561,6 +566,17 @@ dependencies = [
+  "serde_core",
+ ]
+ 
++[[package]]
++name = "derive_arbitrary"
++version = "1.4.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "1e567bd82dcff979e4b03460c307b3cdc9e96fde3d73bed1496d2bc75d9dd62a"
++dependencies = [
++ "proc-macro2",
++ "quote",
++ "syn 2.0.119",
++]
++
+ [[package]]
+ name = "derive_more"
+ version = "2.1.1"
+@@ -768,6 +784,16 @@ dependencies = [
+  "typeid",
+ ]
+ 
++[[package]]
++name = "errno"
++version = "0.3.14"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
++dependencies = [
++ "libc",
++ "windows-sys 0.61.2",
++]
++
+ [[package]]
+ name = "fastrand"
+ version = "2.5.0"
+@@ -793,6 +819,16 @@ dependencies = [
+  "rustc_version",
+ ]
+ 
++[[package]]
++name = "filetime"
++version = "0.2.29"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5c287a33c7f0a620c38e641e7f60827713987b3c0f26e8ddc9462cc69cf75759"
++dependencies = [
++ "cfg-if",
++ "libc",
++]
++
+ [[package]]
+ name = "find-msvc-tools"
+ version = "0.1.14"
+@@ -1319,6 +1355,21 @@ dependencies = [
+  "want",
+ ]
+ 
++[[package]]
++name = "hyper-rustls"
++version = "0.27.10"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "dfa8e654703247911e29c23fbeaa261834bd9bb74efba2f9acddc37bfb127f53"
++dependencies = [
++ "http",
++ "hyper",
++ "hyper-util",
++ "rustls",
++ "tokio",
++ "tokio-rustls",
++ "tower-service",
++]
++
+ [[package]]
+ name = "hyper-util"
+ version = "0.1.21"
+@@ -1338,9 +1389,11 @@ dependencies = [
+  "percent-encoding",
+  "pin-project-lite",
+  "socket2",
++ "system-configuration",
+  "tokio",
+  "tower-service",
+  "tracing",
++ "windows-registry",
+ ]
+ 
+ [[package]]
+@@ -1624,6 +1677,36 @@ dependencies = [
+  "windows-sys 0.45.0",
+ ]
+ 
++[[package]]
++name = "jni"
++version = "0.22.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5efd9a482cf3a427f00d6b35f14332adc7902ce91efb778580e180ff90fa3498"
++dependencies = [
++ "cfg-if",
++ "combine",
++ "jni-macros",
++ "jni-sys 0.4.1",
++ "log",
++ "simd_cesu8",
++ "thiserror 2.0.21",
++ "walkdir",
++ "windows-link",
++]
++
++[[package]]
++name = "jni-macros"
++version = "0.22.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "a00109accc170f0bdb141fed3e393c565b6f5e072365c3bd58f5b062591560a3"
++dependencies = [
++ "proc-macro2",
++ "quote",
++ "rustc_version",
++ "simd_cesu8",
++ "syn 2.0.119",
++]
++
+ [[package]]
+ name = "jni-sys"
+ version = "0.3.1"
+@@ -1753,6 +1836,12 @@ dependencies = [
+  "libc",
+ ]
+ 
++[[package]]
++name = "linux-raw-sys"
++version = "0.12.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
++
+ [[package]]
+ name = "litemap"
+ version = "0.8.3"
+@@ -1806,6 +1895,12 @@ version = "0.3.17"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+ 
++[[package]]
++name = "minisign-verify"
++version = "0.2.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "22f9645cb765ea72b8111f36c522475d2daa0d22c957a9826437e97534bc4e9e"
++
+ [[package]]
+ name = "miniz_oxide"
+ version = "0.8.9"
+@@ -2071,6 +2166,18 @@ dependencies = [
+  "objc2-core-foundation",
+ ]
+ 
++[[package]]
++name = "objc2-osa-kit"
++version = "0.3.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f112d1746737b0da274ef79a23aac283376f335f4095a083a267a082f21db0c0"
++dependencies = [
++ "bitflags 2.13.2",
++ "objc2",
++ "objc2-app-kit",
++ "objc2-foundation",
++]
++
+ [[package]]
+ name = "objc2-quartz-core"
+ version = "0.3.2"
+@@ -2134,12 +2241,32 @@ version = "1.21.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+ 
++[[package]]
++name = "openssl-probe"
++version = "0.2.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
++
+ [[package]]
+ name = "option-ext"
+ version = "0.2.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+ 
++[[package]]
++name = "osakit"
++version = "0.3.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "732c71caeaa72c065bb69d7ea08717bd3f4863a4f451402fc9513e29dbd5261b"
++dependencies = [
++ "objc2",
++ "objc2-foundation",
++ "objc2-osa-kit",
++ "serde",
++ "serde_json",
++ "thiserror 2.0.21",
++]
++
+ [[package]]
+ name = "pango"
+ version = "0.18.3"
+@@ -2525,15 +2652,20 @@ dependencies = [
+  "http-body",
+  "http-body-util",
+  "hyper",
++ "hyper-rustls",
+  "hyper-util",
+  "js-sys",
+  "log",
+  "percent-encoding",
+  "pin-project-lite",
++ "rustls",
++ "rustls-pki-types",
++ "rustls-platform-verifier",
+  "serde",
+  "serde_json",
+  "sync_wrapper",
+  "tokio",
++ "tokio-rustls",
+  "tokio-util",
+  "tower",
+  "tower-http",
+@@ -2569,6 +2701,20 @@ dependencies = [
+  "windows-sys 0.60.2",
+ ]
+ 
++[[package]]
++name = "ring"
++version = "0.17.14"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7"
++dependencies = [
++ "cc",
++ "cfg-if",
++ "getrandom 0.2.17",
++ "libc",
++ "untrusted",
++ "windows-sys 0.52.0",
++]
++
+ [[package]]
+ name = "rustc-hash"
+ version = "2.1.3"
+@@ -2584,6 +2730,92 @@ dependencies = [
+  "semver",
+ ]
+ 
++[[package]]
++name = "rustix"
++version = "1.1.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "891efababe418670775f199f0d233d84843c227a0949a883ce15b37c78d6629d"
++dependencies = [
++ "bitflags 2.13.2",
++ "errno",
++ "libc",
++ "linux-raw-sys",
++ "windows-sys 0.61.2",
++]
++
++[[package]]
++name = "rustls"
++version = "0.23.45"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "0d41d731c7d2f962d1ccc364cec258de3c0e93b38c2fb3ba97ac74513048d634"
++dependencies = [
++ "once_cell",
++ "ring",
++ "rustls-pki-types",
++ "rustls-webpki",
++ "subtle",
++ "zeroize",
++]
++
++[[package]]
++name = "rustls-native-certs"
++version = "0.8.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "dab5152771c58876a2146916e53e35057e1a4dfa2b9df0f0305b07f611fdea4d"
++dependencies = [
++ "openssl-probe",
++ "rustls-pki-types",
++ "schannel",
++ "security-framework",
++]
++
++[[package]]
++name = "rustls-pki-types"
++version = "1.15.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96"
++dependencies = [
++ "zeroize",
++]
++
++[[package]]
++name = "rustls-platform-verifier"
++version = "0.7.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "1167586491e2b18b8bfbb293e8180ec17c201c4f076d7cb3070ca964e7598f98"
++dependencies = [
++ "core-foundation 0.10.1",
++ "core-foundation-sys",
++ "jni 0.22.4",
++ "log",
++ "once_cell",
++ "rustls",
++ "rustls-native-certs",
++ "rustls-platform-verifier-android",
++ "rustls-webpki",
++ "security-framework",
++ "security-framework-sys",
++ "webpki-root-certs",
++ "windows-sys 0.61.2",
++]
++
++[[package]]
++name = "rustls-platform-verifier-android"
++version = "0.2.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "eec689c0bc40ff2458a5977b6619cb718087084a18e02a131c599b62d05e1a5f"
++
++[[package]]
++name = "rustls-webpki"
++version = "0.103.15"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
++dependencies = [
++ "ring",
++ "rustls-pki-types",
++ "untrusted",
++]
++
+ [[package]]
+ name = "rustversion"
+ version = "1.0.23"
+@@ -2599,6 +2831,15 @@ dependencies = [
+  "winapi-util",
+ ]
+ 
++[[package]]
++name = "schannel"
++version = "0.1.29"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "91c1b7e4904c873ef0710c1f407dde2e6287de2bebc1bbbf7d430bb7cbffd939"
++dependencies = [
++ "windows-sys 0.61.2",
++]
++
+ [[package]]
+ name = "schemars"
+ version = "0.8.22"
+@@ -2656,6 +2897,29 @@ version = "1.2.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+ 
++[[package]]
++name = "security-framework"
++version = "3.7.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "b7f4bc775c73d9a02cde8bf7b2ec4c9d12743edf609006c7facc23998404cd1d"
++dependencies = [
++ "bitflags 2.13.2",
++ "core-foundation 0.10.1",
++ "core-foundation-sys",
++ "libc",
++ "security-framework-sys",
++]
++
++[[package]]
++name = "security-framework-sys"
++version = "2.17.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "6ce2691df843ecc5d231c0b14ece2acc3efb62c0a398c7e1d875f3983ce020e3"
++dependencies = [
++ "core-foundation-sys",
++ "libc",
++]
++
+ [[package]]
+ name = "selectors"
+ version = "0.38.0"
+@@ -2867,6 +3131,22 @@ version = "0.3.10"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea"
+ 
++[[package]]
++name = "simd_cesu8"
++version = "1.2.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "11031e251abf8611c80f460e19dbdeb54a66db918e49c65a7065b46ac7aec520"
++dependencies = [
++ "rustc_version",
++ "simdutf8",
++]
++
++[[package]]
++name = "simdutf8"
++version = "0.1.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
++
+ [[package]]
+ name = "siphasher"
+ version = "1.0.4"
+@@ -2979,6 +3259,12 @@ version = "0.11.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
+ 
++[[package]]
++name = "subtle"
++version = "2.6.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
++
+ [[package]]
+ name = "swift-rs"
+ version = "1.0.8"
+@@ -3042,6 +3328,27 @@ dependencies = [
+  "syn 3.0.6",
+ ]
+ 
++[[package]]
++name = "system-configuration"
++version = "0.7.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "a13f3d0daba03132c0aa9767f98351b3488edc2c100cda2d2ec2b04f3d8d3c8b"
++dependencies = [
++ "bitflags 2.13.2",
++ "core-foundation 0.9.4",
++ "system-configuration-sys",
++]
++
++[[package]]
++name = "system-configuration-sys"
++version = "0.6.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "8e1d1b10ced5ca923a1fcb8d03e96b8d3268065d724548c0211415ff6ac6bac4"
++dependencies = [
++ "core-foundation-sys",
++ "libc",
++]
++
+ [[package]]
+ name = "system-deps"
+ version = "6.2.2"
+@@ -3063,7 +3370,7 @@ checksum = "f37f381f4e048e6cdf038b5705f8cf14ad108279d46eb968140a7b291aba9400"
+ dependencies = [
+  "bitflags 2.13.2",
+  "block2",
+- "core-foundation",
++ "core-foundation 0.10.1",
+  "core-graphics",
+  "crossbeam-channel",
+  "dbus",
+@@ -3073,7 +3380,7 @@ dependencies = [
+  "gdkwayland-sys",
+  "gdkx11-sys",
+  "gtk",
+- "jni",
++ "jni 0.21.1",
+  "libc",
+  "log",
+  "ndk",
+@@ -3106,6 +3413,17 @@ dependencies = [
+  "syn 2.0.119",
+ ]
+ 
++[[package]]
++name = "tar"
++version = "0.4.46"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "3f6221d9a6003c78398e3b239969f352578258df48c8eb051caadae0015bc840"
++dependencies = [
++ "filetime",
++ "libc",
++ "xattr",
++]
++
+ [[package]]
+ name = "target-lexicon"
+ version = "0.12.16"
+@@ -3129,7 +3447,7 @@ dependencies = [
+  "gtk",
+  "heck 0.5.0",
+  "http",
+- "jni",
++ "jni 0.21.1",
+  "libc",
+  "log",
+  "mime",
+@@ -3283,6 +3601,49 @@ dependencies = [
+  "url",
+ ]
+ 
++[[package]]
++name = "tauri-plugin-process"
++version = "2.4.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "74ae3d8549ae564c0397377373e262f340908eb23a5b9fbe03f2a00007dc0038"
++dependencies = [
++ "tauri",
++ "tauri-plugin",
++]
++
++[[package]]
++name = "tauri-plugin-updater"
++version = "2.13.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "3cb0b2ea3e85ca287990d3859a29cc5cb18024240fd78f62e027fb7963670f18"
++dependencies = [
++ "base64 0.22.1",
++ "dirs",
++ "flate2",
++ "futures-util",
++ "http",
++ "infer",
++ "log",
++ "minisign-verify",
++ "osakit",
++ "percent-encoding",
++ "reqwest",
++ "rustls",
++ "semver",
++ "serde",
++ "serde_json",
++ "tar",
++ "tauri",
++ "tauri-plugin",
++ "tempfile",
++ "thiserror 2.0.21",
++ "time",
++ "tokio",
++ "url",
++ "windows-sys 0.61.2",
++ "zip",
++]
++
+ [[package]]
+ name = "tauri-runtime"
+ version = "2.12.0"
+@@ -3293,7 +3654,7 @@ dependencies = [
+  "dpi",
+  "gtk",
+  "http",
+- "jni",
++ "jni 0.21.1",
+  "objc2",
+  "objc2-ui-kit",
+  "objc2-web-kit",
+@@ -3316,7 +3677,7 @@ checksum = "fa829eb69860cf1fb0bedb21d2d5f1effce3527d054a68ca1cd7355c654400a3"
+ dependencies = [
+  "gtk",
+  "http",
+- "jni",
++ "jni 0.21.1",
+  "log",
+  "objc2",
+  "objc2-app-kit",
+@@ -3383,6 +3744,19 @@ dependencies = [
+  "toml 1.1.6+spec-1.1.0",
+ ]
+ 
++[[package]]
++name = "tempfile"
++version = "3.27.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
++dependencies = [
++ "fastrand",
++ "getrandom 0.4.3",
++ "once_cell",
++ "rustix",
++ "windows-sys 0.61.2",
++]
++
+ [[package]]
+ name = "tendril"
+ version = "0.5.1"
+@@ -3492,6 +3866,16 @@ dependencies = [
+  "windows-sys 0.61.2",
+ ]
+ 
++[[package]]
++name = "tokio-rustls"
++version = "0.26.6"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "c9cc2678c2cdd569ef8215e2afd7954ada2ae20b4fdd2c5fe6139a3b02d105db"
++dependencies = [
++ "rustls",
++ "tokio",
++]
++
+ [[package]]
+ name = "tokio-util"
+ version = "0.7.19"
+@@ -3717,6 +4101,12 @@ version = "1.13.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "c6f5d3c3b1bf09027a88a6bc961fc00497d651009560b5463668dc81b0fa87a8"
+ 
++[[package]]
++name = "untrusted"
++version = "0.9.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
++
+ [[package]]
+ name = "url"
+ version = "2.5.8"
+@@ -3971,6 +4361,15 @@ dependencies = [
+  "system-deps",
+ ]
+ 
++[[package]]
++name = "webpki-root-certs"
++version = "1.0.9"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "b96554aa2acc8ccdb7e1c9a58a7a68dd5d13bccc69cd124cb09406db612a1c9b"
++dependencies = [
++ "rustls-pki-types",
++]
++
+ [[package]]
+ name = "webview2-com"
+ version = "0.39.1"
+@@ -4135,6 +4534,17 @@ dependencies = [
+  "windows-link",
+ ]
+ 
++[[package]]
++name = "windows-registry"
++version = "0.6.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "02752bf7fbdcce7f2a27a742f798510f3e5ad88dbe84871e5168e2120c3d5720"
++dependencies = [
++ "windows-link",
++ "windows-result",
++ "windows-strings",
++]
++
+ [[package]]
+ name = "windows-result"
+ version = "0.4.1"
+@@ -4171,6 +4581,15 @@ dependencies = [
+  "windows-targets 0.48.5",
+ ]
+ 
++[[package]]
++name = "windows-sys"
++version = "0.52.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
++dependencies = [
++ "windows-targets 0.52.6",
++]
++
+ [[package]]
+ name = "windows-sys"
+ version = "0.59.0"
+@@ -4517,7 +4936,7 @@ dependencies = [
+  "gtk",
+  "http",
+  "javascriptcore-rs",
+- "jni",
++ "jni 0.21.1",
+  "libc",
+  "ndk",
+  "objc2",
+@@ -4564,6 +4983,16 @@ dependencies = [
+  "pkg-config",
+ ]
+ 
++[[package]]
++name = "xattr"
++version = "1.6.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "32e45ad4206f6d2479085147f02bc2ef834ac85886624a23575ae137c8aa8156"
++dependencies = [
++ "libc",
++ "rustix",
++]
++
+ [[package]]
+ name = "yoke"
+ version = "0.8.3"
+@@ -4608,6 +5037,12 @@ dependencies = [
+  "synstructure",
+ ]
+ 
++[[package]]
++name = "zeroize"
++version = "1.9.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
++
+ [[package]]
+ name = "zerotrie"
+ version = "0.2.5"
+@@ -4641,6 +5076,34 @@ dependencies = [
+  "syn 3.0.6",
+ ]
+ 
++[[package]]
++name = "zip"
++version = "4.6.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "caa8cd6af31c3b31c6631b8f483848b91589021b28fffe50adada48d4f4d2ed1"
++dependencies = [
++ "arbitrary",
++ "crc32fast",
++ "indexmap 2.14.2",
++ "memchr",
++]
++
++[[package]]
++name = "zittodb"
++version = "0.1.0"
++dependencies = [
++ "chrono",
++ "directories",
++ "libc",
++ "serde",
++ "serde_json",
++ "tauri",
++ "tauri-build",
++ "tauri-plugin-dialog",
++ "tauri-plugin-process",
++ "tauri-plugin-updater",
++]
++
+ [[package]]
+ name = "zlib-rs"
+ version = "0.6.8"
+diff --git a/src-tauri/Cargo.toml b/src-tauri/Cargo.toml
+index b1ba084..f56d27b 100644
+--- a/src-tauri/Cargo.toml
++++ b/src-tauri/Cargo.toml
+@@ -17,6 +17,8 @@ tauri-build = { version = "2", features = [] }
+ [dependencies]
+ tauri = { version = "2", features = [] }
+ tauri-plugin-dialog = "2"
++tauri-plugin-process = "2"
++tauri-plugin-updater = "2"
+ serde = { version = "1", features = ["derive"] }
+ serde_json = "1"
+ directories = "5"
+diff --git a/src-tauri/capabilities/default.json b/src-tauri/capabilities/default.json
+index 2074e68..8994cc4 100644
+--- a/src-tauri/capabilities/default.json
++++ b/src-tauri/capabilities/default.json
+@@ -5,6 +5,8 @@
+   "windows": ["main"],
+   "permissions": [
+     "core:default",
+-    "dialog:default"
++    "dialog:default",
++    "updater:default",
++    "process:allow-restart"
+   ]
+ }
+diff --git a/src-tauri/src/commands/scrcpy.rs b/src-tauri/src/commands/scrcpy.rs
+index 931b2ec..00c92b8 100644
+--- a/src-tauri/src/commands/scrcpy.rs
++++ b/src-tauri/src/commands/scrcpy.rs
+@@ -9,7 +9,9 @@ use tauri::State;
+ use crate::adb::ToolKind;
+ use crate::error::{AppError, ErrorCode};
+ use crate::processes::{run_captured, spawn_streamed};
+-use crate::scrcpy::{parse_version, supports_android_15, ScrcpyOptions, ScrcpyStatus, MIN_ANDROID_15_VERSION};
++use crate::scrcpy::{
++    parse_version, supports_android_15, ScrcpyOptions, ScrcpyStatus, MIN_ANDROID_15_VERSION,
++};
+ use crate::security::validate_serial;
+ 
+ use super::{media, AppState};
+@@ -56,7 +58,11 @@ fn is_android_15_or_newer(adb_bin: &str, serial: &str) -> bool {
+     let Ok(output) = run_captured(adb_bin, &args, std::time::Duration::from_secs(5)) else {
+         return false;
+     };
+-    output.text().trim().parse::<u32>().is_ok_and(|sdk| sdk >= 35)
++    output
++        .text()
++        .trim()
++        .parse::<u32>()
++        .is_ok_and(|sdk| sdk >= 35)
+ }
+ 
+ #[tauri::command]
+diff --git a/src-tauri/src/lib.rs b/src-tauri/src/lib.rs
+index 806cbbf..18a93d2 100644
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -62,6 +62,8 @@ pub fn run() {
+ 
+     tauri::Builder::default()
+         .plugin(tauri_plugin_dialog::init())
++        .plugin(tauri_plugin_process::init())
++        .plugin(tauri_plugin_updater::Builder::new().build())
+         .manage(state)
+         .invoke_handler(tauri::generate_handler![
+             // tools
+diff --git a/src-tauri/src/scrcpy/mod.rs b/src-tauri/src/scrcpy/mod.rs
+index c925e49..69ec733 100644
+--- a/src-tauri/src/scrcpy/mod.rs
++++ b/src-tauri/src/scrcpy/mod.rs
+@@ -22,9 +22,9 @@ use crate::security::{validate_bitrate, validate_local_path, validate_serial};
+ pub const MIN_ANDROID_15_VERSION: (u32, u32, u32) = (3, 2, 0);
+ 
+ pub fn parse_version(text: &str) -> Option<(u32, u32, u32)> {
+-    let token = text
+-        .split_whitespace()
+-        .find(|part| part.starts_with('v') || part.chars().next().is_some_and(|c| c.is_ascii_digit()))?;
++    let token = text.split_whitespace().find(|part| {
++        part.starts_with('v') || part.chars().next().is_some_and(|c| c.is_ascii_digit())
++    })?;
+     let token = token.trim_start_matches('v');
+     let mut parts = token.split('.').map(|part| {
+         part.chars()
+@@ -33,7 +33,11 @@ pub fn parse_version(text: &str) -> Option<(u32, u32, u32)> {
+             .parse::<u32>()
+             .ok()
+     });
+-    Some((parts.next()??, parts.next().unwrap_or(Some(0))?, parts.next().unwrap_or(Some(0))?))
++    Some((
++        parts.next()??,
++        parts.next().unwrap_or(Some(0))?,
++        parts.next().unwrap_or(Some(0))?,
++    ))
+ }
+ 
+ pub fn supports_android_15(version: (u32, u32, u32)) -> bool {
+diff --git a/src-tauri/tauri.conf.json b/src-tauri/tauri.conf.json
+index 35ce3ff..e443769 100644
+--- a/src-tauri/tauri.conf.json
++++ b/src-tauri/tauri.conf.json
+@@ -28,6 +28,7 @@
+   },
+   "bundle": {
+     "active": true,
++    "createUpdaterArtifacts": true,
+     "targets": ["appimage", "deb"],
+     "category": "DeveloperTool",
+     "shortDescription": "Android Debug Bridge, direto e local",
+@@ -37,5 +38,13 @@
+       "icons/128x128.png",
+       "icons/icon.png"
+     ]
++  },
++  "plugins": {
++    "updater": {
++      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
++      "endpoints": [
++        "https://github.com/theeussx/zittodb/releases/latest/download/latest.json"
++      ]
++    }
+   }
+ }
+diff --git a/src/components/UpdateBanner.tsx b/src/components/UpdateBanner.tsx
+index e334b7d..3b9590b 100644
+--- a/src/components/UpdateBanner.tsx
++++ b/src/components/UpdateBanner.tsx
+@@ -1,8 +1,25 @@
++import { useState } from 'react';
+ import type { UpdateInfo } from '../services/updateService';
+ import { useApp } from '../stores/app';
+ 
+ export function UpdateBanner({ update, onDismiss }: { update: UpdateInfo; onDismiss: () => void }) {
+   const t = useApp((s) => s.t);
++  const [installing, setInstalling] = useState(false);
++  const [progress, setProgress] = useState(0);
++
++  const install = async () => {
++    if (!update.install || installing) return;
++    setInstalling(true);
++    try {
++      await update.install((event) => {
++        if (event.event === 'Started') setProgress(0);
++        if (event.event === 'Progress') setProgress((value) => Math.min(99, value + 1));
++      });
++    } catch {
++      setInstalling(false);
++    }
++  };
++
+   return (
+     <div className="banner update-banner" role="status">
+       <span aria-hidden>↻</span>
+@@ -13,8 +30,16 @@ export function UpdateBanner({ update, onDismiss }: { update: UpdateInfo; onDism
+         <a href={update.url} target="_blank" rel="noreferrer">
+           {t('updates.viewRelease')}
+         </a>
++        {update.install && (
++          <>
++            {' · '}
++            <button className="btn primary small" type="button" onClick={() => void install()} disabled={installing}>
++              {installing ? t('updates.installing', { progress }) : t('updates.install')}
++            </button>
++          </>
++        )}
+       </span>
+-      <button className="btn ghost small" type="button" onClick={onDismiss} aria-label={t('updates.dismiss')}>
++      <button className="btn ghost small" type="button" onClick={onDismiss} disabled={installing} aria-label={t('updates.dismiss')}>
+         {t('updates.dismiss')}
+       </button>
+     </div>
+diff --git a/src/i18n/en-US.ts b/src/i18n/en-US.ts
+index df9c3bf..942deff 100644
+--- a/src/i18n/en-US.ts
++++ b/src/i18n/en-US.ts
+@@ -15,6 +15,8 @@ const enUS: Record<string, string> = {
+   'app.tagline': 'Android Debug Bridge, direct and local.',
+   'updates.available': 'New version available: v{version}',
+   'updates.viewRelease': 'View release',
++  'updates.install': 'Install now',
++  'updates.installing': 'Updating… {progress}%',
+   'updates.dismiss': 'Dismiss',
+ 
+   'tools.found': '{tool} found',
+diff --git a/src/i18n/pt-BR.ts b/src/i18n/pt-BR.ts
+index bca0b7c..7088160 100644
+--- a/src/i18n/pt-BR.ts
++++ b/src/i18n/pt-BR.ts
+@@ -17,6 +17,8 @@ const ptBR: Record<string, string> = {
+   'app.tagline': 'Android Debug Bridge, direto e local.',
+   'updates.available': 'Nova versão disponível: v{version}',
+   'updates.viewRelease': 'Ver release',
++  'updates.install': 'Instalar agora',
++  'updates.installing': 'Atualizando… {progress}%',
+   'updates.dismiss': 'Dispensar',
+ 
+   // ---- tools status ----
+diff --git a/src/services/updateService.ts b/src/services/updateService.ts
+index 917a3ba..0b8566a 100644
+--- a/src/services/updateService.ts
++++ b/src/services/updateService.ts
+@@ -1,18 +1,23 @@
+ import { APP } from '../config/app';
+ 
+-/**
+- * Single source of truth for the repository slug. Rename the GitHub repo by
+- * changing this one value (plus `repository` in package.json).
+- */
+-export const REPO_SLUG = 'theeussx/wadb';
++/** Repository used for release links and the browser-only fallback check. */
++export const REPO_SLUG = 'theeussx/zittodb';
+ const RELEASES_API = `https://api.github.com/repos/${REPO_SLUG}/releases/latest`;
+ const TAGS_API = `https://api.github.com/repos/${REPO_SLUG}/tags?per_page=1`;
+ const REPOSITORY_URL = `https://github.com/${REPO_SLUG}`;
+ 
++export type UpdateProgress =
++  | { event: 'Started'; contentLength?: number }
++  | { event: 'Progress'; chunkLength: number }
++  | { event: 'Finished' };
++
+ export interface UpdateInfo {
+   version: string;
+   url: string;
+   name: string | null;
++  notes?: string | null;
++  /** Present only in the desktop app, where the Tauri updater can install it. */
++  install?: (onProgress?: (progress: UpdateProgress) => void) => Promise<void>;
+ }
+ 
+ function versionParts(version: string): [number, number, number] | null {
+@@ -31,11 +36,39 @@ export function isNewerVersion(current: string, latest: string): boolean {
+   return false;
+ }
+ 
++function isDesktopRuntime(): boolean {
++  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
++}
++
+ /**
+- * Checks release metadata only. It never downloads or installs an update.
+- * A failed/offline check is intentionally silent so the app remains local-first.
++ * Checks the signed Tauri endpoint on desktop and GitHub release metadata in
++ * browser/demo mode. Installation is explicit: the app never replaces itself
++ * silently while the user is working.
+  */
+ export async function checkForUpdate(currentVersion = APP.version): Promise<UpdateInfo | null> {
++  if (isDesktopRuntime()) {
++    const [{ check }, { relaunch }] = await Promise.all([
++      import('@tauri-apps/plugin-updater'),
++      import('@tauri-apps/plugin-process'),
++    ]);
++    const update = await check();
++    if (!update || !isNewerVersion(currentVersion, update.version)) return null;
++    return {
++      version: update.version.replace(/^v/i, ''),
++      url: `${REPOSITORY_URL}/releases/latest`,
++      name: null,
++      notes: update.body ?? null,
++      install: async (onProgress) => {
++        await update.downloadAndInstall((event) => {
++          if (event.event === 'Started') onProgress?.({ event: 'Started', contentLength: event.data.contentLength });
++          if (event.event === 'Progress') onProgress?.({ event: 'Progress', chunkLength: event.data.chunkLength });
++          if (event.event === 'Finished') onProgress?.({ event: 'Finished' });
++        });
++        await relaunch();
++      },
++    };
++  }
++
+   const requestInit: RequestInit = {
+     headers: { Accept: 'application/vnd.github+json' },
+     signal: AbortSignal.timeout(8000),
+@@ -45,6 +78,7 @@ export async function checkForUpdate(currentVersion = APP.version): Promise<Upda
+     tag_name?: unknown;
+     name?: unknown;
+     html_url?: unknown;
++    body?: unknown;
+     draft?: unknown;
+     prerelease?: unknown;
+   } = response.ok ? await response.json() : {};
+@@ -53,9 +87,7 @@ export async function checkForUpdate(currentVersion = APP.version): Promise<Upda
+     if (tagsResponse.ok) {
+       const tags = (await tagsResponse.json()) as Array<{ name?: unknown }>;
+       const tag = tags[0]?.name;
+-      if (typeof tag === 'string') {
+-        data = { tag_name: tag, html_url: `${REPOSITORY_URL}/tree/${tag}` };
+-      }
++      if (typeof tag === 'string') data = { tag_name: tag, html_url: `${REPOSITORY_URL}/tree/${tag}` };
+     }
+   }
+   const version = typeof data.tag_name === 'string' ? data.tag_name.replace(/^v/i, '') : '';
+@@ -63,9 +95,11 @@ export async function checkForUpdate(currentVersion = APP.version): Promise<Upda
+   if (!version || !url || data.draft === true || data.prerelease === true || !isNewerVersion(currentVersion, version)) {
+     return null;
+   }
+-  return {
++  const result: UpdateInfo = {
+     version,
+     url,
+     name: typeof data.name === 'string' && data.name.trim() ? data.name : null,
+   };
++  if (typeof data.body === 'string') result.notes = data.body;
++  return result;
+ }
+diff --git a/tests/update-service.test.ts b/tests/update-service.test.ts
+index f320246..910c17a 100644
+--- a/tests/update-service.test.ts
++++ b/tests/update-service.test.ts
+@@ -17,7 +17,7 @@ describe('update service', () => {
+       json: async () => ({
+         tag_name: 'v0.2.0',
+         name: 'Android 15 compatibility',
+-        html_url: 'https://github.com/theeussx/wadb/releases/tag/v0.2.0',
++        html_url: 'https://github.com/theeussx/zittodb/releases/tag/v0.2.0',
+         draft: false,
+         prerelease: false,
+       }),
+@@ -25,7 +25,7 @@ describe('update service', () => {
+     await expect(checkForUpdate('0.1.0')).resolves.toEqual({
+       version: '0.2.0',
+       name: 'Android 15 compatibility',
+-      url: 'https://github.com/theeussx/wadb/releases/tag/v0.2.0',
++      url: 'https://github.com/theeussx/zittodb/releases/tag/v0.2.0',
+     });
+   });
+ 
+-- 
+2.43.0
+

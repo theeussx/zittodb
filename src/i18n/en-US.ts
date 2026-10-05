@@ -15,6 +15,8 @@ const enUS: Record<string, string> = {
   'app.tagline': 'Android Debug Bridge, direct and local.',
   'updates.available': 'New version available: v{version}',
   'updates.viewRelease': 'View release',
+  'updates.install': 'Install now',
+  'updates.installing': 'Updating… {progress}%',
   'updates.dismiss': 'Dismiss',
 
   'tools.found': '{tool} found',

@@ -17,7 +17,7 @@ describe('update service', () => {
       json: async () => ({
         tag_name: 'v0.2.0',
         name: 'Android 15 compatibility',
-        html_url: 'https://github.com/theeussx/wadb/releases/tag/v0.2.0',
+        html_url: 'https://github.com/theeussx/zittodb/releases/tag/v0.2.0',
         draft: false,
         prerelease: false,
       }),
@@ -25,7 +25,7 @@ describe('update service', () => {
     await expect(checkForUpdate('0.1.0')).resolves.toEqual({
       version: '0.2.0',
       name: 'Android 15 compatibility',
-      url: 'https://github.com/theeussx/wadb/releases/tag/v0.2.0',
+      url: 'https://github.com/theeussx/zittodb/releases/tag/v0.2.0',
     });
   });
 
