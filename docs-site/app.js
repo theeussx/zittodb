@@ -7,7 +7,7 @@ const searchInput = document.querySelector('#search-input');
 const searchResults = document.querySelector('#search-results');
 const toc = document.querySelector('.toc');
 const titles = Object.fromEntries(pages.map((page) => [page.dataset.page, page.querySelector('h1')?.textContent || page.dataset.page]));
-const groups = { inicio: 'Introdução', instalacao: 'Instalação', 'primeiros-passos': 'Primeiros passos', dispositivos: 'Guias', recursos: 'Guias', seguranca: 'Guias', desenvolvimento: 'Projeto', arquitetura: 'Projeto', contribuindo: 'Projeto' };
+const groups = { inicio: 'Introdução', download: 'Introdução', instalacao: 'Instalação', 'primeiros-passos': 'Primeiros passos', dispositivos: 'Guias', recursos: 'Guias', seguranca: 'Guias', desenvolvimento: 'Projeto', arquitetura: 'Projeto', contribuindo: 'Projeto' };
 const ordered = pages.map((page) => page.dataset.page);
 
 function slugFromPath() {

@@ -23,6 +23,7 @@
         <nav class="nav" aria-label="Navegação principal">
           <p class="nav-label">COMECE AQUI</p>
           <a href="/docs" data-page="inicio"><span>⌂</span>Visão geral</a>
+          <a href="/docs/download" data-page="download"><span>↓</span>Baixar o app</a>
           <a href="/docs/instalacao" data-page="instalacao"><span>↓</span>Instalação</a>
           <a href="/docs/primeiros-passos" data-page="primeiros-passos"><span>→</span>Primeiros passos</a>
           <p class="nav-label">GUIA DO USUÁRIO</p>
@@ -46,6 +47,7 @@
           <button class="menu-button" id="menu-button" aria-label="Abrir menu">☰</button><a class="top-docs-link" href="/docs">Docs</a>
           <div class="breadcrumbs"><span>ZittoDB</span><b>/</b><span id="breadcrumb">Visão geral</span></div>
           <div class="top-actions">
+            <a class="header-download" href="/docs/download">Baixar app <span>↓</span></a>
             <button class="search-trigger" id="search-trigger" aria-label="Buscar na documentação"><kbd>⌘</kbd><span>Buscar</span><kbd>K</kbd></button>
             <a class="github-link" href="https://github.com/theeussx/zittodb" target="_blank" rel="noreferrer">GitHub ↗</a>
           </div>
@@ -57,7 +59,7 @@
               <div class="eyebrow"><span class="pulse"></span> GUIA OFICIAL · v0.1</div>
               <h1>Android Debug Bridge,<br /><em>direto e local.</em></h1>
               <p class="lead">O ZittoDB é uma interface gráfica leve e local-first para trabalhar com <strong>ADB</strong>, <strong>scrcpy</strong> e <strong>fastboot</strong> no Linux — sem nuvem, sem conta e sem telemetria.</p>
-              <div class="hero-actions"><a class="button primary" href="/docs/instalacao">Começar agora <span>→</span></a><a class="button secondary" href="https://github.com/theeussx/zittodb" target="_blank" rel="noreferrer">Ver no GitHub ↗</a></div>
+              <div class="hero-actions"><a class="button primary" href="/docs/download">Baixar o aplicativo <span>↓</span></a><a class="button secondary" href="/docs/instalacao">Ver instalação <span>→</span></a></div>
               <div class="terminal-card"><div class="terminal-head"><span class="traffic"><i></i><i></i><i></i></span><span>terminal</span><span class="terminal-dots">•••</span></div><pre><span class="muted">$</span> <span class="green">sudo apt install adb</span>
 <span class="muted">$</span> <span class="green">chmod +x Zittodb.AppImage</span>
 <span class="muted">$</span> <span class="green">./Zittodb.AppImage</span>
@@ -67,6 +69,18 @@
               <div class="section-heading"><span>01</span><h2>Uma camada visual para ferramentas que você já conhece</h2></div>
               <p>O ZittoDB não reimplementa o protocolo ADB. Ele valida a intenção, monta argumentos explícitos e deixa <code>adb</code>, <code>scrcpy</code> e <code>fastboot</code> fazerem o trabalho. Assim, a interface fica mais clara sem esconder o que realmente será executado.</p>
               <div class="callout"><span class="callout-icon">i</span><div><strong>Importante</strong><p>O projeto está em desenvolvimento ativo. A versão desktop é o caminho completo; o modo navegador existe para desenvolvimento, demonstração e testes.</p></div></div>
+            </section>
+
+            <section class="doc-page" data-page="download">
+              <div class="eyebrow"><span class="pulse"></span> DISTRIBUIÇÃO OFICIAL</div><h1>Baixe o <em>ZittoDB</em></h1><p class="lead">Escolha o formato que combina com o seu Linux. O aplicativo desktop é o caminho completo para controlar aparelhos Android com ADB, scrcpy e fastboot.</p>
+              <div class="download-status"><span class="status-dot"></span><div><strong>Próxima release em preparação</strong><p>Os binários AppImage e `.deb` ainda não foram publicados no GitHub. Enquanto isso, você já pode baixar o código-fonte ou compilar localmente.</p></div></div>
+              <div class="download-hero-card"><div class="download-hero-icon">&gt;_</div><div><span class="download-kicker">ZITTODB · LINUX</span><h2>O app nativo, sem Electron</h2><p>Tauri 2 + Rust + React. Leve, local-first e sem telemetria.</p></div><a class="download-main-button" href="https://github.com/theeussx/zittodb/releases" target="_blank" rel="noreferrer">Abrir Releases <span>↗</span></a></div>
+              <div class="section-heading"><span>01</span><h2>Qual arquivo devo escolher?</h2></div>
+              <div class="download-options"><article class="download-option"><div class="option-top"><span class="file-icon">▰</span><span class="option-badge">RECOMENDADO</span></div><h3>AppImage</h3><p>Portátil: baixe, dê permissão de execução e abra. Não altera o sistema e funciona bem em diferentes distribuições.</p><div class="download-option-footer"><code>Zittodb-*.AppImage</code><span>ideal para testar</span></div></article><article class="download-option"><div class="option-top"><span class="file-icon">▣</span><span class="option-badge neutral">DEBIAN</span></div><h3>Pacote `.deb`</h3><p>Integração tradicional em Debian, Ubuntu e derivados, com instalação pelo gerenciador de pacotes.</p><div class="download-option-footer"><code>Zittodb-*.deb</code><span>ideal para instalar</span></div></article></div>
+              <div class="section-heading"><span>02</span><h2>O que está disponível agora</h2></div>
+              <div class="source-download"><div><span class="source-icon">&lt;/&gt;</span><div><strong>Código-fonte no GitHub</strong><p>Baixe a branch principal como `.zip` e rode o ZittoDB em modo demo ou compile o aplicativo desktop.</p></div></div><a class="button secondary" href="https://github.com/theeussx/zittodb/archive/refs/heads/main.zip">Baixar código-fonte <span>↓</span></a></div>
+              <div class="download-steps"><div><span>1</span><strong>Baixe uma release</strong><small>AppImage ou `.deb` quando publicada</small></div><div><span>2</span><strong>Instale o ADB</strong><small><code>sudo apt install adb fastboot</code></small></div><div><span>3</span><strong>Conecte seu Android</strong><small>Ative a Depuração USB e aceite a chave RSA</small></div></div>
+              <div class="callout"><span class="callout-icon">i</span><div><strong>Importante sobre downloads</strong><p>O ZittoDB não embute ADB, scrcpy ou fastboot. Depois de instalar o aplicativo, instale essas ferramentas no sistema seguindo o <a href="/docs/instalacao">guia de instalação</a>.</p></div></div>
             </section>
 
             <section class="doc-page" data-page="instalacao">
