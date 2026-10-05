@@ -1,6 +1,6 @@
 # Site de documentação do ZittoDB
 
-O site é uma página estática sem dependências adicionais, mantida no diretório `docs-site/` do repositório principal.
+O site é uma página estática sem dependências adicionais, mantida no diretório `docs-site/` do repositório principal. A navegação segue o sistema do Pterodroid: grupos de documentação, rotas `/docs/...`, busca, sumário por página, copiar comandos e navegação anterior/próxima.
 
 ## Publicar na Vercel
 
@@ -21,3 +21,8 @@ python3 -m http.server 4173 --directory docs-site
 ```
 
 Abra <http://localhost:4173>.
+
+
+## Sistema de documentação
+
+As páginas são seções sem dependências externas dentro de `index.html`; `app.js` monta a navegação por rota, o índice de busca, o sumário e os controles de código. O `vercel.json` reescreve `/docs/*` para a página principal, como no site de referência.
