@@ -41,7 +41,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "REPLACE_WITH_TAURI_UPDATER_PUBLIC_KEY",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRFNTdEQ0U0RUQ1QkI0MEEKUldRS3RGdnQ1TnhYVGpTVCtYQWhUTENCTVErSEMvVGd5bDY5aG15bXIvQWFQL21lTk9Rb3IvNnEK",
       "endpoints": [
         "https://github.com/theeussx/zittodb/releases/latest/download/latest.json"
       ]
