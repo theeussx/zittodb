@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Zittodb">
+  <title>Zittodb</title>
+  <!-- Mark: green "Z" + cursor bar on graphite. Coordinates mirror the 512px grid
+       used by scripts/generate-icons.mjs, so this and the app icons stay in sync. -->
+  <defs>
+    <clipPath id="round">
+      <rect x="0" y="0" width="128" height="128" rx="25" ry="25" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#round)">
+    <rect width="128" height="128" fill="#10151c" />
+    <g stroke="#3ddc84" stroke-width="17" stroke-linecap="butt" fill="none">
+      <path d="M34 37.5 H94" />
+      <path d="M94 37.5 L34 90.5" />
+      <path d="M34 90.5 H94" />
+    </g>
+    <rect x="34" y="106" width="60" height="10.5" fill="#3ddc84" />
+  </g>
+</svg>
