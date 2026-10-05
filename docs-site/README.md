@@ -26,3 +26,5 @@ Abra <http://localhost:4173>.
 ## Sistema de documentação
 
 As páginas são seções sem dependências externas dentro de `index.html`; `app.js` monta a navegação por rota, o índice de busca, o sumário e os controles de código. O `vercel.json` reescreve `/docs/*` para a página principal, como no site de referência.
+
+Também existem páginas espelho em `docs/` para que links como `/docs/download` continuem funcionando mesmo quando a configuração de rewrites da Vercel ainda não estiver ativa no projeto.
