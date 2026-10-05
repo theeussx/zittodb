@@ -44,7 +44,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5WGFKTTZKdkFUQjZrODFlY3M0RzBqQ2l1OFVsUGpxcU9tMkhZRmQzUkY2VUFBQkFBQUFBQUFBQUFBQUlBQUFBQW1zQmR5M09sS3pka2tKRHp5Q2s4Z2ppV29FTHZ1czg4Vy9sSkFmc0p6UDQrVjd1OTBoRnV0cVpjQkxNWHl1amVGUVN4dG4vUmtqaG5oUjlwWnFrM2tSdTRKOWViNUsyaGJoNHdiTkVaSGVoOGFoZzVtVW9UTGJnQ2dLY0hlZVExSXlVYS9wQU5VSTA9Cg==",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDk0QUY1MUI4OTJCM0JGMjYKUldRbXY3T1N1Rkd2bE51YitNd2dpWTFiZE5qZmJieFZHTVVmLzhUVnh1NC82Zks2cm5QVndnQWUK",
       "endpoints": [
         "https://github.com/theeussx/zittodb/releases/latest/download/latest.json"
       ]
