@@ -764,6 +764,7 @@ UI ──X──► "monta comando" ──X──► sh -c ──X──► qual
 
 | Documento | Quando abrir |
 |---|---|
+| 📖 **[`docs/guia-usuario.html`](docs/guia-usuario.html)** | **Guia do usuário final**: como baixar, instalar, configurar e usar o app. |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Camadas, fluxo de uma operação, tabela de argv, eventos, timeouts. |
 | [`docs/SECURITY.md`](docs/SECURITY.md) | Modelo de ameaças, confirmações, superfície de rede e limitações conhecidas. |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Setup do toolchain, scripts, flatpak, debug e performance. |

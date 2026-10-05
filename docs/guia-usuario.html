@@ -1,0 +1,1349 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="description" content="Guia do usuário Zittodb — Baixe, instale e use a interface gráfica leve para ADB, scrcpy e fastboot no Linux, sem nuvem e sem telemetria." />
+    <meta name="application-name" content="Zittodb" />
+    <meta name="theme-color" content="#0e1116" />
+    <title>Zittodb — Guia do Usuário: Baixar e Usar</title>
+    <link rel="icon" type="image/svg+xml" href="assets/zittodb-mark.svg" />
+    <style>
+        /* ── Design system oficial do Zittodb ── */
+        :root {
+            --bg: #0e1116;
+            --bg-panel: #151a21;
+            --bg-elevated: #1a212b;
+            --bg-input: #10151c;
+            --border: #232b36;
+            --border-strong: #2e3947;
+            --text: #d7dee8;
+            --text-muted: #8a97a8;
+            --text-dim: #5c6878;
+            --accent: #3ddc84;
+            --accent-dim: #2aa862;
+            --accent-contrast: #06130c;
+            --warn: #f5a623;
+            --danger: #ef5350;
+            --info: #4da3ff;
+            --ok: #3ddc84;
+            --radius: 8px;
+            --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'DejaVu Sans Mono', Consolas, monospace;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --trans: 150ms ease;
+        }
+
+        html[data-theme='light'] {
+            --bg: #f2f4f7;
+            --bg-panel: #ffffff;
+            --bg-elevated: #eef1f5;
+            --bg-input: #ffffff;
+            --border: #d4dae2;
+            --border-strong: #b8c1cd;
+            --text: #1c2430;
+            --text-muted: #5a6675;
+            --text-dim: #8b96a5;
+            --accent: #1fa85f;
+            --accent-dim: #17824a;
+            --accent-contrast: #ffffff;
+            --warn: #b97a10;
+            --danger: #c62f2c;
+            --info: #1f6fc4;
+            --shadow: 0 4px 14px rgba(20, 30, 40, 0.1);
+            --shadow-strong: 0 8px 28px rgba(20, 30, 40, 0.18);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            font-size: 15px;
+            line-height: 1.65;
+            color: var(--text);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Navegação fixa ── */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(21, 26, 33, 0.85);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        html[data-theme='light'] header {
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        .nav-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .brand-name {
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            font-size: 17px;
+        }
+
+        .brand-sub {
+            color: var(--text-dim);
+            font-size: 11px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            transition: background var(--trans), color var(--trans);
+        }
+
+        .nav-links a:hover {
+            background: var(--bg-elevated);
+            color: var(--text);
+        }
+
+        .theme-toggle {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background var(--trans), transform var(--trans);
+            margin-left: 6px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--border);
+            transform: rotate(20deg);
+        }
+
+        /* ── Conteúdo principal ── */
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            text-align: center;
+            padding: 40px 0 70px;
+            position: relative;
+        }
+
+        .hero-logo {
+            width: 90px;
+            height: 90px;
+            margin: 0 auto 24px;
+            filter: drop-shadow(0 0 24px rgba(61, 220, 132, 0.25));
+        }
+
+        .hero h1 {
+            font-size: 46px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 18px;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 .accent {
+            color: var(--accent);
+        }
+
+        .hero p {
+            font-size: 19px;
+            color: var(--text-muted);
+            max-width: 620px;
+            margin: 0 auto 36px;
+            line-height: 1.5;
+        }
+
+        .hero-features {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 36px;
+        }
+
+        .hero-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 500;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .hero-pill .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .hero-pill.green .dot { background: var(--accent); }
+        .hero-pill.blue .dot { background: var(--info); }
+        .hero-pill.orange .dot { background: var(--warn); }
+
+        .download-buttons {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            padding: 13px 26px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-strong);
+            background: var(--bg-elevated);
+            color: var(--text);
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            transition: all var(--trans);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+            border-color: var(--accent);
+            color: var(--accent-contrast);
+            font-weight: 700;
+            box-shadow: 0 4px 16px rgba(61, 220, 132, 0.25);
+        }
+
+        .btn.primary:hover {
+            box-shadow: 0 6px 24px rgba(61, 220, 132, 0.4);
+        }
+
+        .btn.large {
+            padding: 15px 32px;
+            font-size: 16px;
+        }
+
+        .btn-icon {
+            font-size: 18px;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid var(--border-strong);
+            color: var(--text-muted);
+            background: var(--bg-panel);
+        }
+
+        .version-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--ok);
+            box-shadow: 0 0 8px rgba(61, 220, 132, 0.6);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ── Seções ── */
+        section {
+            margin-bottom: 64px;
+            scroll-margin-top: 80px;
+        }
+
+        .section-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        section h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+
+        section h3 {
+            font-size: 18px;
+            font-weight: 650;
+            margin: 28px 0 12px;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        section p {
+            margin-bottom: 14px;
+            color: var(--text);
+        }
+
+        section ul, section ol {
+            margin: 12px 0 16px 24px;
+            color: var(--text);
+        }
+
+        section li {
+            margin-bottom: 10px;
+        }
+
+        section li::marker {
+            color: var(--accent);
+        }
+
+        /* ── Divisor entre seções ── */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 0 auto 64px;
+        }
+
+        /* ── Cards ── */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            transition: all var(--trans);
+            position: relative;
+        }
+
+        .card:hover {
+            border-color: var(--accent-dim);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .card-icon {
+            font-size: 32px;
+            margin-bottom: 14px;
+            display: block;
+        }
+
+        .card h4 {
+            font-size: 16px;
+            font-weight: 650;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 0;
+            line-height: 1.55;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .card-badge.required {
+            background: rgba(239, 83, 80, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 83, 80, 0.3);
+        }
+
+        .card-badge.optional {
+            background: rgba(77, 163, 255, 0.1);
+            color: var(--info);
+            border: 1px solid rgba(77, 163, 255, 0.3);
+        }
+
+        /* ── Caixas de código ── */
+        .cmd-box {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            margin: 14px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            position: relative;
+            line-height: 1.7;
+        }
+
+        .cmd-box::before {
+            content: "terminal";
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .comment {
+            color: var(--text-dim);
+        }
+
+        code:not(.cmd-box) {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            background: var(--bg-input);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            color: var(--accent);
+        }
+
+        /* ── Caixas de alerta ── */
+        .alert {
+            border-radius: var(--radius);
+            padding: 14px 18px;
+            font-size: 14px;
+            margin: 18px 0;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            border-left: 4px solid;
+        }
+
+        .alert-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 650;
+            margin-bottom: 4px;
+        }
+
+        .alert.note {
+            border-left-color: var(--info);
+            background: rgba(77, 163, 255, 0.08);
+            color: var(--text);
+        }
+        .alert.note .alert-icon,
+        .alert.note a { color: var(--info); }
+
+        .alert.warn {
+            border-left-color: var(--warn);
+            background: rgba(245, 166, 35, 0.08);
+            color: var(--text);
+        }
+        .alert.warn .alert-icon,
+        .alert.warn a { color: var(--warn); }
+
+        .alert.success {
+            border-left-color: var(--ok);
+            background: rgba(61, 220, 132, 0.08);
+            color: var(--text);
+        }
+        .alert.success .alert-icon { color: var(--ok); }
+
+        .alert.danger {
+            border-left-color: var(--danger);
+            background: rgba(239, 83, 80, 0.08);
+            color: var(--text);
+        }
+        .alert.danger .alert-icon { color: var(--danger); }
+
+        /* ── Passos ── */
+        .steps {
+            counter-reset: step;
+            margin: 24px 0;
+        }
+
+        .step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .step::before {
+            counter-increment: step;
+            content: counter(step);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: var(--accent-contrast);
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+            font-family: var(--font-mono);
+        }
+
+        .step-content {
+            flex: 1;
+            padding-top: 4px;
+        }
+
+        .step-content strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .step-content p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        /* ── Tabela ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        th {
+            text-align: left;
+            color: var(--text-dim);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-elevated);
+        }
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--bg-elevated);
+        }
+
+        kbd {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-bottom-width: 2px;
+            border-radius: 5px;
+            padding: 3px 8px;
+            display: inline-block;
+            margin: 1px;
+        }
+
+        /* ── FAQ Accordion ── */
+        .faq-item {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: border-color var(--trans);
+        }
+
+        .faq-item:hover {
+            border-color: var(--border-strong);
+        }
+
+        .faq-question {
+            width: 100%;
+            padding: 16px 20px;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: inherit;
+        }
+
+        .faq-q-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .faq-q-text {
+            flex: 1;
+        }
+
+        .faq-arrow {
+            font-size: 12px;
+            color: var(--text-dim);
+            transition: transform var(--trans);
+        }
+
+        .faq-item.open .faq-arrow {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 300ms ease, padding 300ms ease;
+            padding: 0 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.65;
+        }
+
+        .faq-item.open .faq-answer {
+            max-height: 400px;
+            padding: 0 20px 18px 50px;
+        }
+
+        /* ── Rodapé ── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 24px;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 13px;
+        }
+
+        .footer-logo {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 16px;
+            opacity: 0.6;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-links {
+            margin-top: 12px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* ── Status dot ── */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .status-dot.ok { background: var(--ok); box-shadow: 0 0 6px rgba(61, 220, 132, 0.6); }
+        .status-dot.warn { background: var(--warn); }
+        .status-dot.err { background: var(--danger); }
+
+        /* ── Responsividade ── */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+            .hero p {
+                font-size: 16px;
+            }
+            .nav-links a.nav-link {
+                display: none;
+            }
+            main {
+                padding: 24px 16px 60px;
+            }
+            section h2 {
+                font-size: 22px;
+            }
+            .hero-logo {
+                width: 70px;
+                height: 70px;
+            }
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="nav-container">
+            <a href="#" class="brand">
+                <!-- Logotipo oficial Zittodb (mark) -->
+                <svg class="brand-logo" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <clipPath id="navRound">
+                            <rect x="0" y="0" width="128" height="128" rx="25" ry="25" />
+                        </clipPath>
+                    </defs>
+                    <g clip-path="url(#navRound)">
+                        <rect width="128" height="128" fill="#10151c" />
+                        <g stroke="#3ddc84" stroke-width="17" stroke-linecap="butt" fill="none">
+                            <path d="M34 37.5 H94" />
+                            <path d="M94 37.5 L34 90.5" />
+                            <path d="M34 90.5 H94" />
+                        </g>
+                        <rect x="34" y="106" width="60" height="10.5" fill="#3ddc84" />
+                    </g>
+                </svg>
+                <div class="brand-text">
+                    <div class="brand-name">Zittodb</div>
+                    <div class="brand-sub">Android Debug Bridge, direto e local</div>
+                </div>
+            </a>
+            <div class="nav-links">
+                <a href="#baixar" class="nav-link">⬇️ Baixar</a>
+                <a href="#instalar" class="nav-link">📀 Instalar</a>
+                <a href="#configurar" class="nav-link">⚙️ Configurar</a>
+                <a href="#usar" class="nav-link">🚀 Usar</a>
+                <a href="#faq" class="nav-link">❓ FAQ</a>
+                <button class="theme-toggle" id="themeToggle" title="Alternar tema">🌓</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- ═══════════ HERO / DOWNLOAD ═══════════ -->
+        <section class="hero" id="baixar">
+            <!-- Logo grande oficial -->
+            <svg class="hero-logo" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                    <clipPath id="heroRound">
+                        <rect x="0" y="0" width="128" height="128" rx="25" ry="25" />
+                    </clipPath>
+                </defs>
+                <g clip-path="url(#heroRound)">
+                    <rect width="128" height="128" fill="#10151c" />
+                    <g stroke="#3ddc84" stroke-width="17" stroke-linecap="butt" fill="none">
+                        <path d="M34 37.5 H94" />
+                        <path d="M94 37.5 L34 90.5" />
+                        <path d="M34 90.5 H94" />
+                    </g>
+                    <rect x="34" y="106" width="60" height="10.5" fill="#3ddc84" />
+                </g>
+            </svg>
+
+            <h1>Gerencie seu Android <span class="accent">sem complicação</span></h1>
+            <p>🖥️ Interface gráfica leve, gratuita e sem telemetria para <strong>ADB</strong>, <strong>scrcpy</strong> e <strong>fastboot</strong> no Linux. Sem nuvem, sem conta, sem surpresas.</p>
+
+            <div class="hero-features">
+                <span class="hero-pill green"><span class="dot"></span> 🟢 v0.1.0 estável</span>
+                <span class="hero-pill blue"><span class="dot"></span> 🐧 Linux amd64</span>
+                <span class="hero-pill orange"><span class="dot"></span> 🔒 Privacidade total</span>
+                <span class="hero-pill green"><span class="dot"></span> ⚡ &lt; 100 MB</span>
+            </div>
+
+            <div class="download-buttons">
+                <a href="https://github.com/theeussx/zittodb/releases/latest" class="btn primary large">
+                    <span class="btn-icon">📦</span> Baixar AppImage
+                </a>
+                <a href="https://github.com/theeussx/zittodb/releases/latest" class="btn large">
+                    <span class="btn-icon">📥</span> Baixar .deb (Debian/Ubuntu)
+                </a>
+            </div>
+
+            <div class="version-badge">
+                <span class="dot"></span>
+                Software livre · Licença MIT · Feito com 🦀 Rust + ⚛️ React + Tauri 2
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- ═══════════ REQUISITOS ═══════════ -->
+        <section id="requisitos">
+            <span class="section-icon">✅</span>
+            <h2>Requisitos de sistema</h2>
+            <p class="section-desc">Antes de começar, certifique-se de que seu computador atende aos requisitos:</p>
+
+            <div class="card-grid">
+                <div class="card">
+                    <span class="card-badge required">obrigatório</span>
+                    <span class="card-icon">🐧</span>
+                    <h4>Sistema operacional</h4>
+                    <p>Qualquer distribuição Linux 64 bits (amd64): Debian, Ubuntu, Fedora, Arch, Mint, Pop!_OS etc. Funciona em Wayland ou X11.</p>
+                </div>
+                <div class="card">
+                    <span class="card-badge required">obrigatório</span>
+                    <span class="card-icon">🔧</span>
+                    <h4>ADB</h4>
+                    <p>Android Debug Bridge — a ferramenta que fala com o celular. Instale pelo gerenciador de pacotes da sua distro.</p>
+                </div>
+                <div class="card">
+                    <span class="card-badge optional">opcional</span>
+                    <span class="card-icon">📱</span>
+                    <h4>scrcpy</h4>
+                    <p>Espelhamento e gravação de tela. Recomendamos a <strong>versão 3.2+</strong> para funcionar com Android 15.</p>
+                </div>
+                <div class="card">
+                    <span class="card-badge optional">opcional</span>
+                    <span class="card-icon">⚡</span>
+                    <h4>fastboot</h4>
+                    <p>Para operações avançadas em modo bootloader/recovery (flash, reinicialização, etc).</p>
+                </div>
+            </div>
+
+            <div class="alert note">
+                <span class="alert-icon">💡</span>
+                <div class="alert-content">
+                    <div class="alert-title">Requisitos de hardware</div>
+                    Você precisa de no mínimo <strong>2 GB de RAM</strong> e <strong>50 MB de espaço em disco</strong>. O Zittodb é leve o suficiente para rodar em computadores antigos ou com modo de economia de energia.
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- ═══════════ INSTALAÇÃO ═══════════ -->
+        <section id="instalar">
+            <span class="section-icon">📀</span>
+            <h2>Instalação</h2>
+            <p class="section-desc">Escolha o formato de acordo com a sua distribuição Linux:</p>
+
+            <h3>🚀 Método 1 — AppImage (qualquer distro)</h3>
+            <p>O AppImage é um arquivo único, portátil, que <strong>não precisa de instalação</strong>. Basta baixar, dar permissão e executar:</p>
+            <div class="cmd-box"><span class="comment"># 1. Dê permissão de execução:</span>
+chmod +x Zittodb-*.AppImage
+
+<span class="comment"># 2. Execute o app:</span>
+./Zittodb-*.AppImage</div>
+            <div class="alert success">
+                <span class="alert-icon">✨</span>
+                <div class="alert-content">
+                    <div class="alert-title">Dica</div>
+                    Mova o AppImage para <code>~/.local/bin/</code> e ele aparecerá automaticamente no menu de aplicativos da maioria das distros.
+                </div>
+            </div>
+
+            <h3>📦 Método 2 — Pacote .deb (Debian, Ubuntu, Mint, Pop!_OS)</h3>
+            <p>Para distribuições baseadas em Debian, o pacote <code>.deb</code> instala o app no sistema:</p>
+            <div class="cmd-box"><span class="comment"># Instale com apt (resolve dependências automaticamente):</span>
+sudo apt install ./Zittodb-*.deb</div>
+
+            <h3>🔧 Instalar as ferramentas do Android</h3>
+            <p>O Zittodb usa as ferramentas oficiais do Android instaladas no seu sistema. Instale-as com um dos comandos abaixo:</p>
+            <div class="cmd-box"><span class="comment"># Debian / Ubuntu / Mint / Pop!_OS:</span>
+sudo apt update && sudo apt install adb scrcpy fastboot
+
+<span class="comment"># Fedora:</span>
+sudo dnf install android-tools scrcpy
+
+<span class="comment"># Arch Linux:</span>
+sudo pacman -S android-tools scrcpy</div>
+
+            <div class="alert warn">
+                <span class="alert-icon">⚠️</span>
+                <div class="alert-content">
+                    <div class="alert-title">Atenção: scrcpy no Ubuntu 22.04 LTS</div>
+                    A versão do scrcpy nos repositórios do Ubuntu 22.04 é antiga (1.25) e <strong>não funciona com Android 15</strong>. Se você tem um dispositivo novo, baixe a versão mais recente no <a href="https://github.com/Genymobile/scrcpy/releases" target="_blank" rel="noopener">site oficial do scrcpy</a>.
+                </div>
+            </div>
+
+            <div class="alert note">
+                <span class="alert-icon">🔍</span>
+                <div class="alert-content">
+                    Depois de instalar tudo, rode <code>make check-deps</code> dentro da pasta do código-fonte para conferir se todas as ferramentas foram detectadas e ver suas versões.
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- ═══════════ CONFIGURAÇÃO NO CELULAR ═══════════ -->
+        <section id="configurar">
+            <span class="section-icon">⚙️</span>
+            <h2>Configurar seu dispositivo Android</h2>
+            <p class="section-desc">Antes de conectar o celular ao computador, você precisa habilitar a <strong>depuração USB</strong>:</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-content">
+                        <strong>📱 Abra as Configurações do celular</strong>
+                        <p>Vá até a tela principal de Configurações do Android.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>ℹ️ Toque em "Sobre o telefone"</strong>
+                        <p>Role até encontrar a opção "Número de compilação" (ou "Build number").</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>👆 Toque 7 vezes em "Número de compilação"</strong>
+                        <p>Isso habilita as "Opções de desenvolvedor". Você verá uma mensagem de confirmação.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>🔧 Volte e abra "Opções de desenvolvedor"</strong>
+                        <p>Esse menu novo aparece agora na tela principal de Configurações.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>✅ Ative "Depuração USB"</strong>
+                        <p>Confirme a caixa de diálogo que aparece.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>🔌 Conecte o cabo USB</strong>
+                        <p>Use um cabo de dados (não apenas de carregamento). Conecte ao computador.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>🔐 Aceite a autorização RSA</strong>
+                        <p>No celular, marque "Sempre permitir deste computador" e toque em OK.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert note">
+                <span class="alert-icon">📶</span>
+                <div class="alert-content">
+                    <div class="alert-title">Conexão por Wi-Fi (sem cabo)</div>
+                    Depois de parear por USB uma vez, você pode conectar sem fio: certifique-se que o celular e o computador estão na <strong>mesma rede Wi-Fi</strong>, depois use a opção "Conectar por Wi-Fi" no Zittodb, ou execute <code>adb connect IP_DO_CELULAR:5555</code>.
+                </div>
+            </div>
+
+            <h3>🧪 Verificar se está funcionando</h3>
+            <p>No terminal, rode:</p>
+            <div class="cmd-box">adb devices -l</div>
+            <p>Se aparecer o serial do seu dispositivo com o status <code>device</code> <span class="status-dot ok"></span>, está tudo pronto para abrir o Zittodb!</p>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- ═══════════ PRIMEIRO USO ═══════════ -->
+        <section id="usar">
+            <span class="section-icon">🚀</span>
+            <h2>Primeiro uso</h2>
+            <p class="section-desc">Ao abrir o Zittodb pela primeira vez, tudo é detectado automaticamente:</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-content">
+                        <strong>🔍 Detecção automática</strong>
+                        <p>O app localiza <code>adb</code>, <code>scrcpy</code> e <code>fastboot</code> no seu sistema. O status aparece no canto inferior esquerdo.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>📂 Caminhos manuais (se precisar)</strong>
+                        <p>Se alguma ferramenta não for encontrada, configure o caminho em <strong>Configurações → Ferramentas</strong>.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>📋 Selecione seu dispositivo</strong>
+                        <p>Os aparelhos conectados aparecem na barra lateral. Clique em um dispositivo para abrir todas as opções.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <strong>🎉 Pronto!</strong>
+                        <p>Explore as abas: Visão geral, Tela, Aplicativos, Arquivos, Shell, Logs, Diagnóstico e Debloat.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>🎯 Funcionalidades principais</h3>
+            <div class="card-grid">
+                <div class="card">
+                    <span class="card-icon">📋</span>
+                    <h4>Dispositivos</h4>
+                    <p>Veja todos os aparelhos conectados por USB, Wi-Fi ou emulador, com status em tempo real.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">🖥️</span>
+                    <h4>Espelhamento de tela</h4>
+                    <p>Veja e controle o celular pelo computador com o scrcpy. Grave tela e áudio em MP4.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">📱</span>
+                    <h4>Aplicativos</h4>
+                    <p>Liste, abra, desative, limpe dados, desinstale apps e extraia APKs com um clique.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">🧹</span>
+                    <h4>Debloat</h4>
+                    <p>Remova bloatware com classificação de risco e <strong>reversão</strong> pelo histórico.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">📁</span>
+                    <h4>Arquivos</h4>
+                    <p>Navegue pelo armazenamento interno, envie e baixe arquivos com barra de progresso.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">💻</span>
+                    <h4>Shell</h4>
+                    <p>Acesse o terminal Linux do Android diretamente no app, com sessão persistente.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">📝</span>
+                    <h4>Logs</h4>
+                    <p>Visualize e filtre o logcat em tempo real. Salve logs para depurar apps travando.</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">⚡</span>
+                    <h4>Fastboot</h4>
+                    <p>Opere dispositivos em modo bootloader (flash de partições com confirmação digitada).</p>
+                </div>
+                <div class="card">
+                    <span class="card-icon">📜</span>
+                    <h4>Histórico</h4>
+                    <p>Auditoria local completa com <strong>botão Reverter</strong> para desfazer ações.</p>
+                </div>
+            </div>
+
+            <h3>⌨️ Atalhos de teclado</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Atalho</th>
+                        <th>O que faz</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd></td>
+                        <td>📋 Ir para Dispositivos</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd></td>
+                        <td>💻 Abrir Shell</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></td>
+                        <td>📸 Capturar screenshot</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd></td>
+                        <td>📁 Gerenciar arquivos</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd></td>
+                        <td>📝 Ver logs (logcat)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📂 Pastas padrão</h3>
+            <p>Tudo é salvo <strong>localmente no seu computador</strong> (nunca é enviado para lugar nenhum):</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>O que</th>
+                        <th>Caminho</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>🎬 Gravações de tela</td><td><code>~/Videos/Zittodb/</code></td></tr>
+                    <tr><td>📸 Screenshots</td><td><code>~/Pictures/Zittodb/</code></td></tr>
+                    <tr><td>📥 Downloads e APKs</td><td><code>~/Downloads/Zittodb/</code></td></tr>
+                    <tr><td>⚙️ Configurações</td><td><code>~/.config/app.zittodb.desktop/</code></td></tr>
+                    <tr><td>🪵 Logs do app</td><td><code>~/.local/share/app.zittodb.desktop/logs/</code></td></tr>
+                </tbody>
+            </table>
+            <div class="alert note">
+                <span class="alert-icon">🛠️</span>
+                <div class="alert-content">
+                    Você pode alterar todas essas pastas em <strong>Configurações → Pastas de saída</strong>.
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- ═══════════ FAQ ═══════════ -->
+        <section id="faq">
+            <span class="section-icon">❓</span>
+            <h2>Perguntas frequentes (FAQ)</h2>
+            <p class="section-desc">Resolvendo os problemas mais comuns:</p>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span class="faq-q-icon">🔒</span>
+                    <span class="faq-q-text">Meu dispositivo aparece como "não autorizado"</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Desbloqueie a tela do celular e <strong>aceite a caixa de diálogo RSA</strong> que aparece no aparelho. Se a caixa não aparecer:</p>
+                    <p style="margin-top:8px">1️⃣ Vá em Opções de desenvolvedor → Revogar autorizações de depuração USB<br>
+                    2️⃣ Desconecte e reconecte o cabo<br>
+                    3️⃣ Aceite a nova solicitação.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span class="faq-q-icon">🚫</span>
+                    <span class="faq-q-text">O dispositivo não aparece na lista</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Verifique estas possibilidades:</p>
+                    <p style="margin-top:8px">🔌 Confira se o cabo suporta dados (muitos cabos servem apenas para carregar)<br>
+                    ✅ Certifique-se que Depuração USB está ativada<br>
+                    🔄 Troque a porta USB ou o cabo<br>
+                    ♻️ Rode <code>adb kill-server && adb start-server</code> e reinicie o Zittodb.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span class="faq-q-icon">🖥️</span>
+                    <span class="faq-q-text">O espelhamento de tela (scrcpy) não abre</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Verifique a versão do scrcpy: <strong>Android 15 exige scrcpy 3.2 ou mais nova</strong>. A versão que vem no Ubuntu 22.04 é muito antiga. Baixe a versão mais recente no site oficial e configure o caminho do executável em <strong>Configurações → Ferramentas → scrcpy</strong>.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span class="faq-q-icon">👤</span>
+                    <span class="faq-q-text">Vocês coletam meus dados? Preciso criar conta?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p><strong>Não.</strong> O Zittodb é 100% local-first:</p>
+                    <p style="margin-top:8px">🚫 Sem telemetria<br>
+                    🚫 Sem contas ou login<br>
+                    🚫 Sem nuvem ou servidores<br>
+                    🚫 Seus arquivos nunca saem do seu computador.<br><br>
+                    A única conexão externa é uma checagem de atualizações (metadados públicos do GitHub), e o download continua sendo manual.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span class="faq-q-icon">🧑‍💻</span>
+                    <span class="faq-q-text">Quero compilar do código-fonte, como faço?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p>Você precisa de Node.js 20+ e Rust estável instalados. Depois é só rodar:</p>
+                    <div class="cmd-box" style="margin-top:8px">npm ci
+npm run tauri:dev     <span class="comment"># desenvolvimento</span>
+npm run tauri:build   <span class="comment"># gerar AppImage + .deb</span></div>
+                    <p style="margin-top:8px">Confira o <a href="DEVELOPMENT.md">guia de desenvolvimento</a> para mais detalhes.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question">
+                    <span class="faq-q-icon">💸</span>
+                    <span class="faq-q-text">O Zittodb é pago? Posso modificar?</span>
+                    <span class="faq-arrow">▼</span>
+                </button>
+                <div class="faq-answer">
+                    <p><strong>100% gratuito e de código aberto</strong> sob licença MIT. Você pode usar, modificar e redistribuir livremente, desde que mantendo a nota de direitos autorais. O projeto é feito com amor pela comunidade 🦀💚.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <!-- Logo miniatura no rodapé -->
+        <svg class="footer-logo" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+                <clipPath id="footerRound">
+                    <rect x="0" y="0" width="128" height="128" rx="25" ry="25" />
+                </clipPath>
+            </defs>
+            <g clip-path="url(#footerRound)">
+                <rect width="128" height="128" fill="#10151c" />
+                <g stroke="#3ddc84" stroke-width="17" stroke-linecap="butt" fill="none">
+                    <path d="M34 37.5 H94" />
+                    <path d="M94 37.5 L34 90.5" />
+                    <path d="M34 90.5 H94" />
+                </g>
+                <rect x="34" y="106" width="60" height="10.5" fill="#3ddc84" />
+            </g>
+        </svg>
+        <p>Feito com 💚 no Brasil 🇧🇷 · Zittodb é software livre sob a licença MIT.</p>
+        <div class="footer-links">
+            <a href="https://github.com/theeussx/zittodb">⭐ Repositório no GitHub</a>
+            <a href="https://github.com/theeussx/zittodb/issues">🐛 Reportar problema</a>
+            <a href="ARCHITECTURE.md">📚 Documentação técnica</a>
+            <a href="DEVELOPMENT.md">👨‍💻 Desenvolvimento</a>
+        </div>
+    </footer>
+
+    <script>
+        // ── Alternância de tema claro/escuro ──
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        const savedTheme = localStorage.getItem('zittodb-theme');
+        if (savedTheme) {
+            html.setAttribute('data-theme', savedTheme);
+            themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+            html.setAttribute('data-theme', 'light');
+            themeToggle.textContent = '☀️';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            localStorage.setItem('zittodb-theme', newTheme);
+        });
+
+        // ── Scroll suave para links âncora ──
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // ── FAQ: accordion (abrir/fechar) ──
+        document.querySelectorAll('.faq-question').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const isOpen = item.classList.contains('open');
+                // Fecha todos os outros
+                document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+                // Abre/fecha o clicado
+                if (!isOpen) item.classList.add('open');
+            });
+        });
+    </script>
+</body>
+</html>
