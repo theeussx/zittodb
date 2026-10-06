@@ -25,12 +25,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "icons": "node scripts/generate-icons.mjs",
+    "check:version": "node scripts/check-version-sync.mjs",
     "check:deps": "bash scripts/check-deps.sh",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "dev:demo": "vite --mode demo",
-    "check": "npm run build && npm test"
+    "check": "npm run check:version && npm run build && npm test"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.0",

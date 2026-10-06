@@ -570,6 +570,11 @@ const ptBR: Record<string, string> = {
   'history.device.model': 'Modelo',
   'history.device.serial': 'Serial',
   'history.device.state': 'Estado',
+  'history.device.alias': 'Apelido',
+  'history.device.tags': 'Tags',
+  'history.device.tagsHint': 'qa, pessoal, laboratório',
+  'history.device.favorite': 'Favorito',
+  'history.device.edit': 'Editar',
   'history.devicesEmpty': 'Nenhum dispositivo registrado.',
   'history.hoursAgo': '{n} h atrás',
   'history.justNow': 'agora',
@@ -606,6 +611,15 @@ const ptBR: Record<string, string> = {
   'settings.tools.hint':
     'Deixe em branco para descobrir automaticamente (PATH, ~/Downloads, ~/.local/bin…).',
   'settings.tools.manualHint': 'caminho manual para {tool}',
+  'settings.adbServer.title': 'Servidor ADB',
+  'settings.adbServer.hint': 'Inicie ou recupere o daemon ADB. Reiniciar interrompe sessões e outros clientes ADB locais.',
+  'settings.adbServer.version': 'Versão',
+  'settings.adbServer.unavailable': 'indisponível',
+  'settings.adbServer.start': 'Iniciar daemon',
+  'settings.adbServer.restart': 'Reiniciar daemon',
+  'settings.adbServer.confirm': 'Digite REINICIAR_ADB para confirmar',
+  'settings.adbServer.started': 'Servidor ADB iniciado.',
+  'settings.adbServer.restarted': 'Servidor ADB reiniciado.',
   'settings.version': 'Versão',
 
   // ---- shell (complemento) ----

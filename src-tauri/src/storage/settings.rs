@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{AppError, ErrorCode};
+use super::{ensure_private_dir, ensure_private_file};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default, rename_all = "camelCase")]
@@ -98,8 +99,9 @@ pub struct SettingsStore {
 
 impl SettingsStore {
     pub fn open(dir: &std::path::Path) -> SettingsStore {
-        fs::create_dir_all(dir).ok();
+        ensure_private_dir(dir);
         let path = dir.join("settings.json");
+        ensure_private_file(&path);
         let loaded = load_from(&path).unwrap_or_default();
         SettingsStore {
             path,
@@ -109,6 +111,10 @@ impl SettingsStore {
 
     /// For tests.
     pub fn at(path: PathBuf) -> SettingsStore {
+        if let Some(parent) = path.parent() {
+            ensure_private_dir(parent);
+        }
+        ensure_private_file(&path);
         let loaded = load_from(&path).unwrap_or_default();
         SettingsStore {
             path,
@@ -129,7 +135,9 @@ impl SettingsStore {
             serde_json::to_string_pretty(new)
                 .map_err(|e| AppError::new(ErrorCode::Unexpected, format!("serialize: {e}")))?,
         )?;
+        ensure_private_file(&tmp);
         fs::rename(&tmp, &self.path)?;
+        ensure_private_file(&self.path);
         *self.current.lock().unwrap() = new.clone();
         Ok(())
     }

@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
+use super::{ensure_private_dir, ensure_private_file};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,9 +44,11 @@ pub struct AuditLog {
 
 impl AuditLog {
     pub fn open(dir: &std::path::Path, enabled: bool) -> AuditLog {
-        fs::create_dir_all(dir).ok();
+        ensure_private_dir(dir);
+        let path = dir.join("audit.jsonl");
+        ensure_private_file(&path);
         AuditLog {
-            path: dir.join("audit.jsonl"),
+            path,
             enabled: Mutex::new(enabled),
         }
     }
@@ -68,6 +71,7 @@ impl AuditLog {
         else {
             return;
         };
+        ensure_private_file(&self.path);
         let _ = writeln!(file, "{json}");
         self.trim();
     }
@@ -84,6 +88,7 @@ impl AuditLog {
         let keep = &lines[lines.len() - MAX_LINES..];
         let joined: String = keep.iter().map(|l| format!("{l}\n")).collect();
         fs::write(&self.path, joined).ok();
+        ensure_private_file(&self.path);
     }
 
     /// Most recent first.
@@ -104,6 +109,7 @@ impl AuditLog {
 
     pub fn clear(&self) {
         fs::write(&self.path, "").ok();
+        ensure_private_file(&self.path);
     }
 
     pub fn path(&self) -> &std::path::Path {

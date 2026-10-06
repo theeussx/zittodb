@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::storage::{ensure_private_dir, ensure_private_file};
 
 const MAX_FILE_BYTES: u64 = 2 * 1024 * 1024; // 2 MB, then start over
 
@@ -39,9 +40,10 @@ pub struct AppLog {
 
 impl AppLog {
     pub fn open(log_dir: &Path) -> std::io::Result<AppLog> {
-        fs::create_dir_all(log_dir)?;
+        ensure_private_dir(log_dir);
         let path = log_dir.join("zittodb.log");
         let file = OpenOptions::new().create(true).append(true).open(&path)?;
+        ensure_private_file(&path);
         Ok(AppLog {
             file: Mutex::new(Some(file)),
         })

@@ -3,7 +3,8 @@
 use tauri::State;
 
 use crate::adb::{ToolKind, ToolStatus};
-use crate::error::AppError;
+use crate::adb::client::{AdbClient, TIMEOUT_DEVICE};
+use crate::error::{AppError, ErrorCode};
 
 use super::AppState;
 
@@ -74,6 +75,39 @@ pub fn set_tool_path(
 pub fn check_tool_path(state: State<'_, AppState>, path: String) -> Result<bool, AppError> {
     let _ = state;
     Ok(crate::adb::is_executable_file_check(&path))
+}
+
+#[tauri::command]
+pub async fn adb_server_version(state: State<'_, AppState>) -> Result<String, AppError> {
+    let st = state.inner().clone();
+    let adb = st.adb()?;
+    super::join(super::blocking(move || AdbClient::new(&adb).run_ok(vec!["version".into()], TIMEOUT_DEVICE))).await
+}
+
+#[tauri::command]
+pub async fn adb_server_start(state: State<'_, AppState>) -> Result<String, AppError> {
+    let st = state.inner().clone();
+    let adb = st.adb()?;
+    super::join(super::blocking(move || AdbClient::new(&adb).run_ok(vec!["start-server".into()], TIMEOUT_DEVICE))).await
+}
+
+#[tauri::command]
+pub async fn adb_server_restart(
+    state: State<'_, AppState>,
+    confirmation: String,
+) -> Result<String, AppError> {
+    if confirmation != "REINICIAR_ADB" {
+        return Err(AppError::new(ErrorCode::ConfirmationRequired, "type REINICIAR_ADB to confirm"));
+    }
+    let st = state.inner().clone();
+    let adb = st.adb()?;
+    let result = super::join(super::blocking(move || {
+        let client = AdbClient::new(&adb);
+        let _ = client.run_ok(vec!["kill-server".into()], TIMEOUT_DEVICE)?;
+        client.run_ok(vec!["start-server".into()], TIMEOUT_DEVICE)
+    })).await?;
+    st.log.warning("ADB server restarted by explicit user action");
+    Ok(result)
 }
 
 fn detect_tools_inner(st: &AppState) -> Vec<ToolStatus> {

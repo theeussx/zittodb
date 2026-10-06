@@ -129,6 +129,9 @@ export interface HistoryEntry {
   lastState: string | null;
   lastSeenMs: number | null;
   connection: string | null;
+  alias?: string | null;
+  tags: string[];
+  favorite: boolean;
 }
 
 export type Theme = 'dark' | 'light' | 'system';

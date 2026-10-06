@@ -56,6 +56,9 @@ export interface Bridge {
   getDeviceProps(serial: string): Promise<Record<string, string>>;
   adbConnect(host: string, port: number): Promise<string>;
   adbDisconnect(host: string, port: number): Promise<string>;
+  adbServerVersion(): Promise<string>;
+  adbServerStart(): Promise<string>;
+  adbServerRestart(confirmation: string): Promise<string>;
   rebootDevice(
     serial: string | null,
     target: 'system' | 'bootloader' | 'recovery' | 'sideload',
@@ -142,6 +145,7 @@ export interface Bridge {
   clearAudit(): Promise<void>;
   getDeviceHistory(): Promise<HistoryEntry[]>;
   clearDeviceHistory(): Promise<void>;
+  updateDeviceMetadata(serial: string, alias: string | null, tags: string[], favorite: boolean): Promise<HistoryEntry[]>;
   getAppInfo(): Promise<AppInfo>;
   getAppPaths(): Promise<AppPaths>;
 
@@ -211,6 +215,15 @@ class TauriBridge implements Bridge {
   }
   adbDisconnect(host: string, port: number) {
     return this.call<string>('adb_disconnect', { host, port });
+  }
+  adbServerVersion() {
+    return this.call<string>('adb_server_version');
+  }
+  adbServerStart() {
+    return this.call<string>('adb_server_start');
+  }
+  adbServerRestart(confirmation: string) {
+    return this.call<string>('adb_server_restart', { confirmation });
   }
   rebootDevice(
     serial: string | null,
@@ -371,6 +384,9 @@ class TauriBridge implements Bridge {
   }
   clearDeviceHistory() {
     return this.call<void>('clear_device_history');
+  }
+  updateDeviceMetadata(serial: string, alias: string | null, tags: string[], favorite: boolean) {
+    return this.call<HistoryEntry[]>('update_device_metadata', { serial, alias, tags, favorite });
   }
   getAppInfo() {
     return this.call<AppInfo>('get_app_info');

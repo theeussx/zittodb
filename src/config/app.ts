@@ -3,12 +3,13 @@
 //
 // Brand: "Zittodb" = "zitto" (zero / silêncio) + "db" (Android Debug Bridge).
 // The "db" is the Android Debug Bridge — not a database.
+import packageJson from '../../package.json';
 
 export const APP = {
   name: 'Zittodb',
   tagline: 'Android Debug Bridge, direto e local.',
   taglineEn: 'Android Debug Bridge, direct and local.',
-  version: '0.1.0',
+  version: packageJson.version,
   identifier: 'app.zittodb.desktop',
 } as const;
 

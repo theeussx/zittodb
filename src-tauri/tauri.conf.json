@@ -23,7 +23,8 @@
       }
     ],
     "security": {
-      "freezePrototype": true
+      "freezePrototype": true,
+      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420; font-src 'self' data:"
     }
   },
   "bundle": {

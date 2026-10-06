@@ -40,6 +40,13 @@ export function localBackend(): Plugin {
     const adb = (...args: string[]) => run(['-s', validSerial(a.serial), ...args]);
     switch (command) {
       case 'detect_tools': return Promise.all(['adb', 'scrcpy', 'fastboot'].map(async (name) => { try { const { stdout } = await exec(name, [name === 'adb' ? 'version' : '--version'], { timeout: 5000 }); return { name, found: true, path: name, version: stdout.split('\n')[0], source: 'PATH' }; } catch { return { name, found: false, path: null, version: null, source: null }; } }));
+      case 'adb_server_version': return run(['version']);
+      case 'adb_server_start': return run(['start-server']);
+      case 'adb_server_restart': {
+        if (a.confirmation !== 'REINICIAR_ADB') fail('Digite REINICIAR_ADB para reiniciar o servidor ADB.', 'CONFIRMATION_REQUIRED');
+        await run(['kill-server']);
+        return run(['start-server']);
+      }
       case 'list_devices': return parseDevices(await run(['devices', '-l']));
       case 'get_device_props': {
         const text = await adb('shell', 'getprop');

@@ -32,6 +32,7 @@ import type {
   ToolStatus,
 } from '../types';
 import type { Bridge, Unsubscribe } from './bridge';
+import { APP } from '../config/app';
 
 const delay = (ms = 120) => new Promise((r) => setTimeout(r, ms));
 
@@ -250,6 +251,9 @@ export class MockBridge implements Bridge {
       lastState: 'connected',
       lastSeenMs: Date.now() - 3_600_000,
       connection: 'usb',
+      alias: 'Redmi de QA',
+      tags: ['qa'],
+      favorite: true,
     },
   ];
   private settings: Settings = {
@@ -314,6 +318,9 @@ export class MockBridge implements Bridge {
         lastState: d.state,
         lastSeenMs: Date.now(),
         connection: d.connection,
+        alias: this.history.find((h) => h.serial === d.serial)?.alias ?? null,
+        tags: this.history.find((h) => h.serial === d.serial)?.tags ?? [],
+        favorite: this.history.find((h) => h.serial === d.serial)?.favorite ?? false,
       })),
       ...this.history.filter((h) => !DEVICES.some((d) => d.serial === h.serial)),
     ];
@@ -388,6 +395,24 @@ export class MockBridge implements Bridge {
   async adbDisconnect(host: string, port: number): Promise<string> {
     await delay(100);
     return `disconnected ${host}:${port}`;
+  }
+
+  async adbServerVersion(): Promise<string> {
+    await delay(80);
+    return 'Android Debug Bridge version 1.0.41 (simulado)';
+  }
+
+  async adbServerStart(): Promise<string> {
+    await delay(120);
+    return '* daemon started successfully (simulado)';
+  }
+
+  async adbServerRestart(confirmation: string): Promise<string> {
+    await delay(160);
+    if (confirmation !== 'REINICIAR_ADB') {
+      throw Object.assign(new Error('confirm'), { code: 'CONFIRMATION_REQUIRED', details: 'type REINICIAR_ADB to confirm' });
+    }
+    return '* daemon restarted successfully (simulado)';
   }
 
   async rebootDevice(
@@ -926,8 +951,16 @@ export class MockBridge implements Bridge {
     this.history = [];
   }
 
+  async updateDeviceMetadata(serial: string, alias: string | null, tags: string[], favorite: boolean): Promise<HistoryEntry[]> {
+    await delay(40);
+    const existing = this.history.find((h) => h.serial === serial);
+    if (existing) Object.assign(existing, { alias: alias?.trim() || null, tags, favorite });
+    else this.history.push({ serial, model: null, lastState: null, lastSeenMs: null, connection: null, alias: alias?.trim() || null, tags, favorite });
+    return this.history.map((h) => ({ ...h, tags: [...h.tags] }));
+  }
+
   async getAppInfo(): Promise<AppInfo> {
-    return { name: 'Zittodb', version: '0.1.0', tauriVersion: 'demo', platform: 'web-demo' };
+    return { name: 'Zittodb', version: APP.version, tauriVersion: 'demo', platform: 'web-demo' };
   }
 
   async getAppPaths(): Promise<AppPaths> {

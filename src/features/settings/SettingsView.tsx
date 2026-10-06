@@ -56,6 +56,9 @@ export function SettingsView() {
   const [appPaths, setAppPaths] = useState<AppPaths | null>(null);
   const [error, setError] = useState<AppError | null>(null);
   const [busy, setBusy] = useState(false);
+  const [adbServerVersion, setAdbServerVersion] = useState<string | null>(null);
+  const [adbServerBusy, setAdbServerBusy] = useState(false);
+  const [adbRestartConfirmation, setAdbRestartConfirmation] = useState('');
 
   const persist = useCallback(
     async (patch: Partial<SettingsDto>) => {
@@ -79,6 +82,10 @@ export function SettingsView() {
       .getAppPaths()
       .then(setAppPaths)
       .catch(() => {});
+    void getBridge()
+      .adbServerVersion()
+      .then(setAdbServerVersion)
+      .catch(() => setAdbServerVersion(null));
   }, []);
 
   const browseTool = async (tool: 'adb' | 'scrcpy' | 'fastboot') => {
@@ -98,6 +105,25 @@ export function SettingsView() {
   };
 
   const status = (n: string) => tools.find((x) => x.name === n);
+  const startAdbServer = async () => {
+    setAdbServerBusy(true);
+    const r = await act(() => getBridge().adbServerStart());
+    if (r.ok) {
+      setAdbServerVersion(r.value);
+      useApp.getState().toast({ kind: 'success', title: t('settings.adbServer.started') });
+    } else setError(r.error);
+    setAdbServerBusy(false);
+  };
+  const restartAdbServer = async () => {
+    setAdbServerBusy(true);
+    const r = await act(() => getBridge().adbServerRestart(adbRestartConfirmation));
+    if (r.ok) {
+      setAdbServerVersion(r.value);
+      setAdbRestartConfirmation('');
+      useApp.getState().toast({ kind: 'success', title: t('settings.adbServer.restarted') });
+    } else setError(r.error);
+    setAdbServerBusy(false);
+  };
 
   return (
     <div className="grid cols-2">
@@ -182,6 +208,30 @@ export function SettingsView() {
           </div>
         </div>
         <div className="dim small mt-8">{t('settings.tools.hint')}</div>
+      </div>
+
+      <div className="card">
+        <h3>{t('settings.adbServer.title')}</h3>
+        <p className="dim small">{t('settings.adbServer.hint')}</p>
+        <div className="kv">
+          <span className="k">{t('settings.adbServer.version')}</span>
+          <span className="v mono">{adbServerVersion ?? t('settings.adbServer.unavailable')}</span>
+        </div>
+        <div className="row mt-12">
+          <Button size="small" onClick={() => void startAdbServer()} disabled={adbServerBusy}>
+            {t('settings.adbServer.start')}
+          </Button>
+          <input
+            type="text"
+            value={adbRestartConfirmation}
+            placeholder="REINICIAR_ADB"
+            onChange={(e) => setAdbRestartConfirmation(e.target.value)}
+            aria-label={t('settings.adbServer.confirm')}
+          />
+          <Button size="small" variant="ghost" onClick={() => void restartAdbServer()} disabled={adbServerBusy || adbRestartConfirmation !== 'REINICIAR_ADB'}>
+            {t('settings.adbServer.restart')}
+          </Button>
+        </div>
       </div>
 
       <div className="card">

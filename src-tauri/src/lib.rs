@@ -70,6 +70,9 @@ pub fn run() {
             commands::tools::detect_tools,
             commands::tools::set_tool_path,
             commands::tools::check_tool_path,
+            commands::tools::adb_server_version,
+            commands::tools::adb_server_start,
+            commands::tools::adb_server_restart,
             // devices
             commands::devices::list_devices,
             commands::devices::get_device_info,
@@ -131,6 +134,7 @@ pub fn run() {
             commands::settings::clear_audit,
             commands::settings::get_device_history,
             commands::settings::clear_device_history,
+            commands::settings::update_device_metadata,
             commands::settings::get_app_info,
             commands::settings::get_app_paths,
         ])

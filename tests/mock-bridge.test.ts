@@ -22,6 +22,24 @@ describe('MockBridge: devices', () => {
       code: 'DEVICE_UNAUTHORIZED',
     });
   });
+
+  it('persists alias, tags and favorite metadata', async () => {
+    const b = new MockBridge();
+    const updated = await b.updateDeviceMetadata('23021RAA2Y', 'Telefone de QA', ['qa', 'lab'], false);
+    expect(updated.find((d) => d.serial === '23021RAA2Y')).toMatchObject({
+      alias: 'Telefone de QA',
+      tags: ['qa', 'lab'],
+      favorite: false,
+    });
+  });
+});
+
+describe('MockBridge: ADB server controls', () => {
+  it('requires explicit confirmation before restart', async () => {
+    const b = new MockBridge();
+    await expect(b.adbServerRestart('')).rejects.toMatchObject({ code: 'CONFIRMATION_REQUIRED' });
+    await expect(b.adbServerRestart('REINICIAR_ADB')).resolves.toContain('restarted');
+  });
 });
 
 describe('MockBridge: destructive operations need typed words', () => {

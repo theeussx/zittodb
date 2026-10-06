@@ -61,6 +61,19 @@ pub fn clear_device_history(state: State<'_, AppState>) -> Result<(), super::App
     Ok(())
 }
 
+#[tauri::command]
+pub fn update_device_metadata(
+    state: State<'_, AppState>,
+    serial: String,
+    alias: Option<String>,
+    tags: Vec<String>,
+    favorite: bool,
+) -> Result<Vec<HistoryEntry>, super::AppError> {
+    let st = state.inner().clone();
+    st.history.update_metadata(&serial, alias, tags, favorite)?;
+    Ok(st.history.read())
+}
+
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppInfo {
@@ -75,9 +88,7 @@ pub fn get_app_info() -> AppInfo {
     AppInfo {
         name: "Zittodb".into(),
         version: env!("CARGO_PKG_VERSION").into(),
-        // Keep a stable display string; the exact patch version ships with
-        // Cargo.lock and is not worth exposing as an API dependency.
-        tauri_version: "2".into(),
+        tauri_version: tauri::VERSION.into(),
         platform: std::env::consts::OS.into(),
     }
 }

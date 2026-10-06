@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/theeussx/zittodb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.0-3ddc84?style=flat-square&labelColor=0e1116" /></a>
+  <a href="https://github.com/theeussx/zittodb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.5-3ddc84?style=flat-square&labelColor=0e1116" /></a>
   <a href="LICENSE"><img alt="Licença MIT" src="https://img.shields.io/badge/license-MIT-2aa862?style=flat-square&labelColor=0e1116" /></a>
   <img alt="Linux" src="https://img.shields.io/badge/platform-Linux%20(amd64)-4da3ff?style=flat-square&labelColor=0e1116" />
   <img alt="Tauri 2 · Rust · React" src="https://img.shields.io/badge/stack-Tauri%202%20%C2%B7%20Rust%20%C2%B7%20React-f5a623?style=flat-square&labelColor=0e1116" />
@@ -134,6 +134,7 @@ O frontend abre em `http://localhost:1420`. O modo demo não executa comandos re
 | `npm run tauri:dev` | Executa o app desktop em desenvolvimento. |
 | `npm run tauri:build` | Gera AppImage e `.deb`. |
 | `npm test` | Testes frontend com Vitest. |
+| `npm run check:version` | Confere a sincronização da versão entre pacote, Tauri, Rust e README. |
 | `make test-rust` | Testes backend com Cargo. |
 | `npm run check` | Build e testes principais. |
 | `npm run check:deps` | Verifica `adb`, `scrcpy` e `fastboot`. |

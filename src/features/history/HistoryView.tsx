@@ -27,6 +27,9 @@ export function HistoryView() {
   const [devices, setDevices] = useState<HistoryEntry[] | null>(null);
   const [error, setError] = useState<AppError | null>(null);
   const [lastUndo, setLastUndo] = useState<UndoRef | null>(null);
+  const [editingSerial, setEditingSerial] = useState<string | null>(null);
+  const [aliasDraft, setAliasDraft] = useState('');
+  const [tagsDraft, setTagsDraft] = useState('');
 
   const load = useCallback(async () => {
     const [a, d] = await Promise.all([
@@ -52,6 +55,29 @@ export function HistoryView() {
     const r = await act(() => getBridge().executeOperation(entry.device, pkgOp));
     if (!r.ok) setError(r.error);
     void load();
+  };
+
+  const editDevice = (entry: HistoryEntry) => {
+    setEditingSerial(entry.serial);
+    setAliasDraft(entry.alias ?? '');
+    setTagsDraft(entry.tags.join(', '));
+  };
+  const saveDevice = async (entry: HistoryEntry) => {
+    const result = await act(() => getBridge().updateDeviceMetadata(
+      entry.serial,
+      aliasDraft.trim() || null,
+      tagsDraft.split(',').map((tag) => tag.trim()).filter(Boolean),
+      entry.favorite,
+    ));
+    if (result.ok) {
+      setDevices(result.value);
+      setEditingSerial(null);
+    } else setError(result.error);
+  };
+  const toggleFavorite = async (entry: HistoryEntry) => {
+    const result = await act(() => getBridge().updateDeviceMetadata(entry.serial, entry.alias ?? null, entry.tags, !entry.favorite));
+    if (result.ok) setDevices(result.value);
+    else setError(result.error);
   };
 
   return (
@@ -157,22 +183,30 @@ export function HistoryView() {
               <thead>
                 <tr>
                   <th>{t('history.device.serial')}</th>
+                  <th>{t('history.device.alias')}</th>
                   <th>{t('history.device.model')}</th>
+                  <th>{t('history.device.tags')}</th>
+                  <th>{t('history.device.favorite')}</th>
                   <th>{t('history.device.state')}</th>
                   <th>{t('history.device.lastSeen')}</th>
                   <th>{t('history.device.conn')}</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 {devices.map((d) => (
                   <tr key={d.serial}>
                     <td className="mono">{d.serial}</td>
+                    <td>{editingSerial === d.serial ? <input value={aliasDraft} onChange={(e) => setAliasDraft(e.target.value)} /> : (d.alias ?? '—')}</td>
                     <td>{d.model ?? '—'}</td>
+                    <td>{editingSerial === d.serial ? <input value={tagsDraft} onChange={(e) => setTagsDraft(e.target.value)} placeholder={t('history.device.tagsHint')} /> : (d.tags.length ? d.tags.join(', ') : '—')}</td>
+                    <td><Button size="small" variant="ghost" onClick={() => void toggleFavorite(d)}>{d.favorite ? '★' : '☆'}</Button></td>
                     <td>
                       <Badge tone={d.lastState === 'connected' ? 'ok' : 'default'}>{d.lastState ?? '—'}</Badge>
                     </td>
                     <td>{timeAgo(d.lastSeenMs, t)}</td>
                     <td>{d.connection ?? '—'}</td>
+                    <td>{editingSerial === d.serial ? <Button size="small" onClick={() => void saveDevice(d)}>{t('common.save')}</Button> : <Button size="small" variant="ghost" onClick={() => editDevice(d)}>{t('history.device.edit')}</Button>}</td>
                   </tr>
                 ))}
               </tbody>
