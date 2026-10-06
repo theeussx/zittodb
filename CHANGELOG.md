@@ -1,3 +1,17 @@
+## [0.1.6] - 2026-10-06
+
+### Adicionado
+
+- Recuperação do servidor ADB pela interface, incluindo versão, inicialização e reinício protegido por confirmação.
+- Alias, tags e favoritos persistentes para dispositivos no histórico local.
+- Validação de identidade e metadados de dispositivos no backend Rust e no modo local/mock.
+- Verificação automática de sincronização de versões integrada ao `npm run check`.
+
+### Segurança
+
+- Reiniciar o daemon exige digitar `REINICIAR_ADB` e informa que sessões ADB locais serão interrompidas.
+- Metadados locais recebem limites de tamanho e continuam fora de qualquer serviço remoto.
+
 ## [0.1.5] - 2026-10-05
 
 ### Adicionado
