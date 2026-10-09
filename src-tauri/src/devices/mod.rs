@@ -193,19 +193,30 @@ pub fn get_battery(adb: &str, serial: &str) -> Result<parse::BatteryInfo, AppErr
 pub fn get_storage(adb: &str, serial: &str) -> Result<parse::DiskUsage, AppError> {
     validate_serial(serial)?;
     let client = AdbClient::new(adb);
-    // Android's toybox `df` does not support the GNU `-m` flag. Request
-    // 1024-byte blocks, which is supported across Android versions, and let
-    // the parser normalize the result to MB for the UI.
-    let out = client.run_shell(serial, "df -k /sdcard")?;
-    if !out.success() {
-        return Err(AppError::from_process(ErrorCode::ProcessFailed, adb, &out));
+    // Android vendors expose shared storage under different aliases. Try
+    // both the public-storage paths and /data, keeping the first parseable
+    // result. `df -k` is preferred because it is supported by toybox; the
+    // final `df -m` fallback handles older vendor shells.
+    let candidates = [
+        ("df -k /sdcard", "/sdcard"),
+        ("df -k /storage/emulated/0", "/storage/emulated/0"),
+        ("df -k /data", "/data"),
+        ("df -m /sdcard", "/sdcard"),
+    ];
+    let mut last_output = String::new();
+    for (command, path) in candidates {
+        let out = client.run_shell(serial, command)?;
+        last_output = out.text();
+        if out.success() {
+            if let Some(usage) = parse::parse_df(&last_output, path) {
+                return Ok(usage);
+            }
+        }
     }
-    parse::parse_df(&out.text(), "/sdcard").ok_or_else(|| {
-        AppError::new(
-            ErrorCode::ProcessFailed,
-            format!("could not parse df output: {}", out.text().trim()),
-        )
-    })
+    Err(AppError::new(
+        ErrorCode::ProcessFailed,
+        format!("could not parse df output: {}", last_output.trim()),
+    ))
 }
 
 #[derive(Debug, Clone, Default, Serialize)]

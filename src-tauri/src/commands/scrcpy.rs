@@ -117,7 +117,7 @@ pub fn scrcpy_start(
 
     let label = format!("scrcpy -s {serial}");
     let handle = spawn_streamed(&scrcpy_bin, &args, &label, false, Arc::new(on_line))?;
-    st.registry.add(SCRCPY_ID, handle);
+    st.registry.add_with_recording(SCRCPY_ID, handle, recording);
     st.log.info(&format!("scrcpy started: {}", args.join(" ")));
 
     Ok(ScrcpyStatus {
@@ -145,7 +145,7 @@ pub fn scrcpy_stop(state: State<'_, AppState>) -> Result<ScrcpyStatus, AppError>
 pub fn scrcpy_status(state: State<'_, AppState>) -> Result<ScrcpyStatus, AppError> {
     let st = state.inner().clone();
     let (running, pid) = st.registry.status(SCRCPY_ID);
-    let recording = st.registry.get(SCRCPY_ID).map(|_| false).unwrap_or(false);
+    let recording = st.registry.is_recording(SCRCPY_ID);
     Ok(ScrcpyStatus {
         running,
         pid,

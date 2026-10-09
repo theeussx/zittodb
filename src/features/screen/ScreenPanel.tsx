@@ -61,26 +61,24 @@ export function ScreenPanel({ serial }: { serial: string }) {
     setBitrate(p.bitrate ?? '');
   };
 
-  const options: ScrcpyOptions = {
+  const buildOptions = (effectiveRecordPath: string | null): ScrcpyOptions => ({
     preset,
     maxSize: maxSize === '' ? null : Number(maxSize),
-    maxFps: maxFps === '' ? Number(maxFps) : null,
+    maxFps: maxFps === '' ? null : Number(maxFps),
     bitrate: bitrate || null,
     orientation,
     turnScreenOff,
     audio,
     alwaysOnTop,
-    recordPath: record ? recordPath || null : null,
-  };
+    recordPath: record ? effectiveRecordPath : null,
+  });
 
   const start = async () => {
-    if (record && !recordPath) {
-      const fn = await getBridge().recordingFilename();
-      setRecordPath(fn);
-    }
+    const effectiveRecordPath = record ? recordPath || (await getBridge().recordingFilename()) : null;
+    if (effectiveRecordPath && effectiveRecordPath !== recordPath) setRecordPath(effectiveRecordPath);
     setBusy(true);
     setError(null);
-    const r = await act(() => getBridge().scrcpyStart(serial, options), {
+    const r = await act(() => getBridge().scrcpyStart(serial, buildOptions(effectiveRecordPath)), {
       title: t('screen.running'),
     });
     if (r.ok) setStatus(r.value);
