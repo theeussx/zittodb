@@ -26,10 +26,14 @@ pub async fn fastboot_devices(
 #[tauri::command]
 pub async fn fastboot_execute(
     state: State<'_, AppState>,
+    serial: Option<String>,
     op: FastbootOperation,
     confirmation: Option<String>,
 ) -> Result<OpResult, AppError> {
     let st = state.inner().clone();
+    if let Some(serial) = serial.as_deref() {
+        crate::security::validate_serial(serial)?;
+    }
     let s = st.settings.load();
     let fastboot_bin = st
         .tools
@@ -52,11 +56,12 @@ pub async fn fastboot_execute(
 
     // Hoisted before `op` moves into the blocking thread.
     let op_name = op.name().to_string();
-    let args = op.to_args()?;
+    let args = op.to_args_for_serial(serial.as_deref())?;
     let described = format!("{} {}", fastboot_bin, args.join(" "));
     st.log.info(&format!("fastboot: {op_name}"));
 
-    let h = blocking(move || op.run(&fastboot_bin));
+    let serial_for_run = serial.clone();
+    let h = blocking(move || op.run_on_device(&fastboot_bin, serial_for_run.as_deref()));
     let out = join(h).await?;
 
     let (result_str, code) = if out.success() {
@@ -73,7 +78,7 @@ pub async fn fastboot_execute(
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0),
-        device: None,
+        device: serial,
         action: op_name,
         command: described,
         result: result_str,
