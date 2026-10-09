@@ -67,6 +67,16 @@ pub async fn execute_batch(
 
     let mut results = Vec::with_capacity(packages.len());
     for (i, pkg) in packages.iter().enumerate() {
+        if risk::classify_package(pkg) == risk::RiskLevel::Critical {
+            results.push(BatchItem {
+                index: i as u32,
+                package: pkg.clone(),
+                ok: false,
+                code: Some(ErrorCode::OperationRejected.as_str().to_string()),
+                message: "critical package is protected from debloat".into(),
+            });
+            continue;
+        }
         let item_op = with_package(&op, pkg);
         let res = execute_op(
             st.clone(),
