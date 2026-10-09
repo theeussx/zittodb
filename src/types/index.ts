@@ -275,4 +275,41 @@ export interface AppError {
   details: string;
 }
 
+export const DIAGNOSTIC_REPORT_SCHEMA_VERSION = 1 as const;
+
+export type ReportSectionStatus = 'ok' | 'unavailable' | 'error';
+
+export interface ReportError {
+  code: string;
+  details: string;
+}
+
+export interface ReportSection {
+  status: ReportSectionStatus;
+  data: unknown | null;
+  error: ReportError | null;
+}
+
+export interface DiagnosticReport {
+  schemaVersion: typeof DIAGNOSTIC_REPORT_SCHEMA_VERSION;
+  generatedAt: string;
+  appVersion: string;
+  device: {
+    serial: string | null;
+    state: string | null;
+  };
+  tools: Array<{
+    name: string;
+    found: boolean;
+    version: string | null;
+  }>;
+  sections: Record<string, ReportSection>;
+  limitations: string[];
+}
+
+export interface ReportPrivacy {
+  includeSerial: boolean;
+  includeNetwork: boolean;
+}
+
 export type BackendEvent = 'shell-output' | 'logcat-line' | 'scrcpy-log' | 'file-progress';
