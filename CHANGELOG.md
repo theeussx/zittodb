@@ -1,18 +1,23 @@
-## [Unreleased] — v2.0.0 em desenvolvimento
+## [1.0.0] - 2026-10-09
 
-### Entregue
+### Adicionado
 
 - Relatório diagnóstico P0 com schemaVersion estável, coleta parcial por seção, mascaramento conservador de serial/rede e preview na tela de Diagnóstico.
 - Exportação backend em JSON e Markdown no diretório seguro de downloads, sem sobrescrita silenciosa e com nomes incrementais.
-- Correções de gravação do scrcpy, armazenamento, debloat protegido e seleção explícita de dispositivo no fastboot.
 
-### Adiado
+### Corrigido
 
-- Inspetor de APK e fila de instalação ainda não foram iniciados nesta etapa; permanecem condicionados à revisão do P0 e à validação de segurança.
+- A gravação do scrcpy e o armazenamento dos arquivos de mídia.
+- A seleção explícita do dispositivo e a consulta de variáveis no Fastboot.
+- A proteção de pacotes críticos e a desinstalação no Debloat.
 
-### Não verificado
+### Ainda não verificado
 
 - Hardware físico, bundles AppImage/.deb, instalação limpa e assinatura/updater permanecem sem verificação nesta sandbox.
+
+## [Unreleased] — próxima versão
+
+- Inspetor de APK e fila de instalação ainda não foram iniciados; permanecem condicionados à revisão do relatório diagnóstico e à validação de segurança.
 
 ## [0.1.6] - 2026-10-06
 

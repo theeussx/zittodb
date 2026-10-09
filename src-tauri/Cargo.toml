@@ -1,6 +1,6 @@
 [package]
 name = "zittodb"
-version = "0.1.6"
+version = "1.0.0"
 description = "Zittodb — Android Debug Bridge, direct and local. Lightweight ADB/scrcpy/fastboot GUI for Linux."
 authors = ["theeussx"]
 edition = "2021"

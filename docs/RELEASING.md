@@ -4,14 +4,14 @@ O Zittodb não precisa ser recompilado no computador do usuário. O aplicativo i
 
 ## Publicar uma versão
 
-1. Atualize `version` em `package.json`, `src-tauri/Cargo.toml` e `src-tauri/tauri.conf.json`.
-2. Adicione as mudanças ao `CHANGELOG.md`.
+1. Atualize a versão em `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock` e `src-tauri/tauri.conf.json`; atualize também o badge no README.
+2. Registre as alterações e a data no `CHANGELOG.md`.
 3. Rode `npm ci && npm run check`.
-4. Crie e envie uma tag semântica:
+4. Crie e envie a tag semântica correspondente à versão:
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 O workflow `Release` compila o AppImage e o `.deb`, cria as assinaturas e publica `latest.json` no release.

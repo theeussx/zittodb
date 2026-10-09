@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/theeussx/zittodb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v0.1.6-3ddc84?style=flat-square&labelColor=0e1116" /></a>
+  <a href="https://github.com/theeussx/zittodb/releases"><img alt="Release" src="https://img.shields.io/badge/release-v1.0.0-3ddc84?style=flat-square&labelColor=0e1116" /></a>
   <a href="LICENSE"><img alt="Licença MIT" src="https://img.shields.io/badge/license-MIT-2aa862?style=flat-square&labelColor=0e1116" /></a>
   <img alt="Linux" src="https://img.shields.io/badge/platform-Linux%20(amd64)-4da3ff?style=flat-square&labelColor=0e1116" />
   <img alt="Tauri 2 · Rust · React" src="https://img.shields.io/badge/stack-Tauri%202%20%C2%B7%20Rust%20%C2%B7%20React-f5a623?style=flat-square&labelColor=0e1116" />
