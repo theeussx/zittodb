@@ -12,6 +12,7 @@ pub mod devices;
 pub mod error;
 pub mod fastboot;
 pub mod processes;
+pub mod reports;
 pub mod scrcpy;
 pub mod security;
 pub mod storage;
