@@ -125,6 +125,9 @@ pub fn run() {
             commands::operations::execute_batch,
             commands::operations::classify_packages,
             commands::operations::debloat_profiles,
+            // diagnostic report
+            commands::reports::collect_diagnostic_report,
+            commands::reports::export_diagnostic_report,
             // fastboot
             commands::fastboot::fastboot_devices,
             commands::fastboot::fastboot_execute,

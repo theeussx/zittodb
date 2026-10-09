@@ -79,6 +79,7 @@ pub struct ReportTool {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct DiagnosticReport {
     #[serde(rename = "schemaVersion")]
     pub schema_version: u32,
@@ -90,7 +91,8 @@ pub struct DiagnosticReport {
     pub limitations: Vec<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct ReportPrivacy {
     pub include_serial: bool,
     pub include_network: bool,

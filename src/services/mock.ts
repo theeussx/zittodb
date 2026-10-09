@@ -13,6 +13,8 @@ import type {
   Device,
   DeviceInfo,
   DeviceOperation,
+  DiagnosticReport,
+  DiagnosticReportExport,
   DiskUsage,
   FastbootDevice,
   FastbootOperation,
@@ -23,6 +25,7 @@ import type {
   PackageMeta,
   PackageRow,
   PackageRisk,
+  ReportPrivacy,
   RiskLevel,
   ScrcpyOptions,
   ScrcpyStatus,
@@ -384,6 +387,52 @@ export class MockBridge implements Bridge {
       'ro.product.cpu.abilist': info.cpuAbis ?? 'unknown',
     };
     return props;
+  }
+
+  async collectDiagnosticReport(serial: string, privacy: ReportPrivacy): Promise<DiagnosticReport> {
+    await delay(180);
+    this.ensureDevice(serial);
+    const [info, battery, storage, network, tools] = await Promise.all([
+      this.getDeviceInfo(serial),
+      this.getBattery(serial),
+      this.getStorage(serial),
+      this.getNetworkInfo(serial),
+      this.detectTools(),
+    ]);
+    return {
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      appVersion: APP.version,
+      device: {
+        serial: privacy.includeSerial ? serial : `…${serial.slice(-4)}`,
+        state: 'connected',
+      },
+      tools: tools.map(({ name, found, version }) => ({ name, found, version })),
+      sections: {
+        connection: { status: 'ok', data: { state: 'connected', connection: 'usb', isEmulator: false }, error: null },
+        properties: { status: 'ok', data: info, error: null },
+        memory: { status: 'ok', data: { totalRamMb: info.totalRamMb }, error: null },
+        battery: { status: 'ok', data: battery, error: null },
+        storage: { status: 'ok', data: storage, error: null },
+        network: serial === 'emulator-5554'
+          ? { status: 'unavailable', data: null, error: { code: 'DEVICE_UNREACHABLE', details: 'network data unavailable in emulator demo' } }
+          : {
+              status: 'ok',
+              data: privacy.includeNetwork ? network : { interfaces: [], gateway: '[redacted]', dns: [], mac: '[redacted]' },
+              error: null,
+            },
+      },
+      limitations: [],
+    };
+  }
+
+  async exportDiagnosticReport(report: DiagnosticReport): Promise<DiagnosticReportExport> {
+    await delay(120);
+    return {
+      report,
+      jsonPath: `~/Downloads/Zittodb/zittodb-diagnostic-${timestamp()}.json`,
+      markdownPath: `~/Downloads/Zittodb/zittodb-diagnostic-${timestamp()}.md`,
+    };
   }
 
   async adbConnect(host: string, port: number): Promise<string> {

@@ -312,4 +312,10 @@ export interface ReportPrivacy {
   includeNetwork: boolean;
 }
 
+export interface DiagnosticReportExport {
+  report: DiagnosticReport;
+  jsonPath: string;
+  markdownPath: string;
+}
+
 export type BackendEvent = 'shell-output' | 'logcat-line' | 'scrcpy-log' | 'file-progress';

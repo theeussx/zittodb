@@ -12,6 +12,7 @@ pub mod logs;
 pub mod media;
 pub mod operations;
 pub mod packages;
+pub mod reports;
 pub mod scrcpy;
 pub mod settings;
 pub mod shell;

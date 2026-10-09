@@ -6,7 +6,7 @@ import { act } from '../../services/deviceService';
 import { useApp } from '../../stores/app';
 import { Button, Spinner, formatMb } from '../../components/ui';
 import { ErrorDialog } from '../../components/ConfirmDialog';
-import type { AppError, DeviceOperation, NetworkInfo, OpResult } from '../../types';
+import type { AppError, DiagnosticReport, DeviceOperation, NetworkInfo, OpResult, ReportPrivacy } from '../../types';
 
 interface Diag {
   id: string;
@@ -26,6 +26,10 @@ export function DiagnosticsView({ serial }: { serial: string }) {
   const t = useApp((s) => s.t);
   const [results, setResults] = useState<Record<string, OpResult | 'loading'>>({});
   const [error, setError] = useState<AppError | null>(null);
+  const [report, setReport] = useState<DiagnosticReport | null>(null);
+  const [privacy, setPrivacy] = useState<ReportPrivacy>({ includeSerial: false, includeNetwork: false });
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportPaths, setReportPaths] = useState<string[]>([]);
 
   const run = useCallback(
     async (id: string, op: DeviceOperation) => {
@@ -44,6 +48,25 @@ export function DiagnosticsView({ serial }: { serial: string }) {
 
   const runAll = () => {
     for (const d of DIAGS) void run(d.id, d.op);
+  };
+
+  const collectReport = async () => {
+    setReportBusy(true);
+    setError(null);
+    setReportPaths([]);
+    const r = await act(() => getBridge().collectDiagnosticReport(serial, privacy));
+    if (r.ok) setReport(r.value);
+    else setError(r.error);
+    setReportBusy(false);
+  };
+
+  const exportReport = async () => {
+    if (!report) return;
+    setReportBusy(true);
+    const r = await act(() => getBridge().exportDiagnosticReport(report));
+    if (r.ok) setReportPaths([r.value.jsonPath, r.value.markdownPath]);
+    else setError(r.error);
+    setReportBusy(false);
   };
 
   return (
@@ -69,6 +92,51 @@ export function DiagnosticsView({ serial }: { serial: string }) {
       <Button variant="primary" onClick={runAll}>
         {t('diag.runAll')}
       </Button>
+
+      <div className="card mt-12">
+        <div className="row wrap">
+          <div>
+            <h3 style={{ margin: 0 }}>{t('diag.report.title')}</h3>
+            <div className="dim small mt-8">{t('diag.report.hint')}</div>
+          </div>
+          <div className="spacer" />
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={privacy.includeSerial}
+              onChange={(e) => setPrivacy((p) => ({ ...p, includeSerial: e.target.checked }))}
+              disabled={reportBusy}
+            />
+            {t('diag.report.includeSerial')}
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={privacy.includeNetwork}
+              onChange={(e) => setPrivacy((p) => ({ ...p, includeNetwork: e.target.checked }))}
+              disabled={reportBusy}
+            />
+            {t('diag.report.includeNetwork')}
+          </label>
+          <Button onClick={() => void collectReport()} disabled={reportBusy}>
+            {reportBusy ? t('common.loading') : t('diag.report.generate')}
+          </Button>
+          <Button variant="ghost" onClick={() => void exportReport()} disabled={!report || reportBusy}>
+            {t('diag.report.export')}
+          </Button>
+        </div>
+        {report && (
+          <pre className="cmd-box mt-12" style={{ maxHeight: 320, overflow: 'auto' }}>
+            {JSON.stringify(report, null, 2)}
+          </pre>
+        )}
+        {reportPaths.length > 0 && (
+          <div className="small mt-8">
+            {t('diag.report.saved')}
+            <div className="mono">{reportPaths.join('\n')}</div>
+          </div>
+        )}
+      </div>
 
       <div className="grid cols-2 mt-12">
         {DIAGS.map((d) => {

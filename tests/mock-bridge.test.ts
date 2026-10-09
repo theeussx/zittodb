@@ -34,6 +34,29 @@ describe('MockBridge: devices', () => {
   });
 });
 
+describe('MockBridge: diagnostic reports', () => {
+  it('collects a complete masked report and exports both formats', async () => {
+    const b = new MockBridge();
+    const report = await b.collectDiagnosticReport('23021RAA2Y', { includeSerial: false, includeNetwork: false });
+    expect(report.schemaVersion).toBe(1);
+    expect(report.device.serial).toBe('…AA2Y');
+    expect(report.sections.network.status).toBe('ok');
+    expect(report.sections.network.data).toMatchObject({ gateway: '[redacted]' });
+    const exported = await b.exportDiagnosticReport(report);
+    expect(exported.jsonPath).toMatch(/\.json$/);
+    expect(exported.markdownPath).toMatch(/\.md$/);
+  });
+
+  it('keeps partial sections and surfaces offline devices', async () => {
+    const b = new MockBridge();
+    const partial = await b.collectDiagnosticReport('emulator-5554', { includeSerial: true, includeNetwork: true });
+    expect(partial.sections.network.status).toBe('unavailable');
+    await expect(
+      b.collectDiagnosticReport('F6OFF999', { includeSerial: false, includeNetwork: false }),
+    ).rejects.toMatchObject({ code: 'DEVICE_OFFLINE' });
+  });
+});
+
 describe('MockBridge: ADB server controls', () => {
   it('requires explicit confirmation before restart', async () => {
     const b = new MockBridge();

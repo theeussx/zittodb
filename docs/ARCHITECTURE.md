@@ -35,6 +35,10 @@
 
 **Erros** seguem um contrato único: `AppError { code: SCREAMING_SNAKE, details: string }`. Códigos: `NO_DEVICE`, `AMBIGUOUS_DEVICE`, `DEVICE_UNAUTHORIZED`, `DEVICE_OFFLINE`, `INVALID_SERIAL`, `INVALID_PATH`, `INVALID_PACKAGE`, `INVALID_ARGUMENT`, `CONFIRMATION_REQUIRED`, `FILE_EXISTS`, `ALREADY_RUNNING`, `PROCESS_FAILED`, `TIMEOUT`, `CANCELLED`, `UNSUPPORTED`, `UNEXPECTED`, `OPERATION_REJECTED`. O frontend mapeia `code → texto localizado` + "ver detalhes técnicos".
 
+### Relatório diagnóstico P0
+
+`collect_diagnostic_report` mantém a coleta no backend Rust e revalida o serial selecionado antes de cada leitura. Propriedades/memória, bateria, armazenamento e rede são seções independentes; uma falha vira `status: error` ou `unavailable` sem apagar as demais. `ReportPrivacy` mascara serial e rede por padrão. `export_diagnostic_report` serializa o DTO com `schemaVersion: 1` e grava JSON e Markdown com `OpenOptions::create_new` no `downloadDir` configurado ou em `~/Downloads/Zittodb`, usando nomes incrementais para colisões. O modo local não grava arquivos e retorna `UNSUPPORTED_LOCAL` para comandos não suportados.
+
 ## Fluxo de uma operação (execute_operation)
 
 1. **Gate de confirmação** — operações destrutivas exigem a palavra digitada (`APAGAR`, `REMOVER`, `REINICIAR`…); senão `CONFIRMATION_REQUIRED`.

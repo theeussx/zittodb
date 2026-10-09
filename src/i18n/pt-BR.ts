@@ -524,6 +524,13 @@ const ptBR: Record<string, string> = {
   'diag.netInfo': 'Rede e armazenamento',
   'diag.run': 'Executar',
   'diag.runAll': 'Executar tudo',
+  'diag.report.title': 'Relatório de diagnóstico',
+  'diag.report.hint': 'Gere uma prévia parcial e exporte JSON e Markdown sem sobrescrever arquivos.',
+  'diag.report.includeSerial': 'Incluir serial completo',
+  'diag.report.includeNetwork': 'Incluir dados de rede',
+  'diag.report.generate': 'Gerar relatório',
+  'diag.report.export': 'Exportar JSON + Markdown',
+  'diag.report.saved': 'Arquivos salvos:',
 
   // ---- fastboot ----
   'fb.checking': 'Verificando dispositivos em modo fastboot…',

@@ -504,6 +504,13 @@ const enUS: Record<string, string> = {
   'diag.netInfo': 'Network and storage',
   'diag.run': 'Run',
   'diag.runAll': 'Run all',
+  'diag.report.title': 'Diagnostic report',
+  'diag.report.hint': 'Generate a partial preview and export JSON and Markdown without overwriting files.',
+  'diag.report.includeSerial': 'Include full serial',
+  'diag.report.includeNetwork': 'Include network data',
+  'diag.report.generate': 'Generate report',
+  'diag.report.export': 'Export JSON + Markdown',
+  'diag.report.saved': 'Files saved:',
 
   // ---- fastboot ----
   'fb.checking': 'Checking fastboot devices…',

@@ -19,6 +19,8 @@ import type {
   Device,
   DeviceInfo,
   DeviceOperation,
+  DiagnosticReport,
+  DiagnosticReportExport,
   DiskUsage,
   FastbootDevice,
   FastbootOperation,
@@ -29,6 +31,7 @@ import type {
   PackageMeta,
   PackageRow,
   PackageRisk,
+  ReportPrivacy,
   ScrcpyOptions,
   ScrcpyStatus,
   ScreenshotResult,
@@ -54,6 +57,8 @@ export interface Bridge {
   getStorage(serial: string): Promise<DiskUsage>;
   getNetworkInfo(serial: string): Promise<NetworkInfo>;
   getDeviceProps(serial: string): Promise<Record<string, string>>;
+  collectDiagnosticReport(serial: string, privacy: ReportPrivacy): Promise<DiagnosticReport>;
+  exportDiagnosticReport(report: DiagnosticReport): Promise<DiagnosticReportExport>;
   adbConnect(host: string, port: number): Promise<string>;
   adbDisconnect(host: string, port: number): Promise<string>;
   adbServerVersion(): Promise<string>;
@@ -209,6 +214,12 @@ class TauriBridge implements Bridge {
   }
   getDeviceProps(serial: string) {
     return this.call<Record<string, string>>('get_device_props', { serial });
+  }
+  collectDiagnosticReport(serial: string, privacy: ReportPrivacy) {
+    return this.call<DiagnosticReport>('collect_diagnostic_report', { serial, privacy });
+  }
+  exportDiagnosticReport(report: DiagnosticReport) {
+    return this.call<DiagnosticReportExport>('export_diagnostic_report', { report });
   }
   adbConnect(host: string, port: number) {
     return this.call<string>('adb_connect', { host, port });
