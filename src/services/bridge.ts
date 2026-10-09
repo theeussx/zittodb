@@ -136,7 +136,7 @@ export interface Bridge {
 
   // fastboot
   fastbootDevices(): Promise<FastbootDevice[]>;
-  fastbootExecute(op: FastbootOperation, confirmation?: string): Promise<OpResult>;
+  fastbootExecute(serial: string | null, op: FastbootOperation, confirmation?: string): Promise<OpResult>;
 
   // settings / history / app
   getSettings(): Promise<Settings>;
@@ -363,8 +363,8 @@ class TauriBridge implements Bridge {
   fastbootDevices() {
     return this.call<FastbootDevice[]>('fastboot_devices');
   }
-  fastbootExecute(op: FastbootOperation, confirmation?: string) {
-    return this.call<OpResult>('fastboot_execute', { op, confirmation });
+  fastbootExecute(serial: string | null, op: FastbootOperation, confirmation?: string) {
+    return this.call<OpResult>('fastboot_execute', { serial, op, confirmation });
   }
 
   getSettings() {

@@ -73,7 +73,7 @@ describe('MockBridge: destructive operations need typed words', () => {
   it('fastboot flash without FLASHAR → CONFIRMATION_REQUIRED', async () => {
     const b = new MockBridge();
     await expect(
-      b.fastbootExecute({ op: 'flash', partition: 'boot', file: '/tmp/boot.img' }, ''),
+      b.fastbootExecute('FAKEFB01', { op: 'flash', partition: 'boot', file: '/tmp/boot.img' }, ''),
     ).rejects.toMatchObject({ code: 'CONFIRMATION_REQUIRED' });
   });
 

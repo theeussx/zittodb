@@ -308,17 +308,28 @@ fn pump_lines<R: Read>(reader: R, mut on_line: impl FnMut(String)) {
 /// Dropping the registry (app exit) kills everything — no orphans.
 pub struct ProcessRegistry {
     procs: Mutex<HashMap<String, Arc<StreamHandle>>>,
+    recording: Mutex<HashMap<String, bool>>,
 }
 
 impl ProcessRegistry {
     pub fn new() -> ProcessRegistry {
         ProcessRegistry {
             procs: Mutex::new(HashMap::new()),
+            recording: Mutex::new(HashMap::new()),
         }
     }
 
     pub fn add(&self, id: &str, handle: Arc<StreamHandle>) {
         self.procs.lock().unwrap().insert(id.to_string(), handle);
+        self.recording.lock().unwrap().insert(id.to_string(), false);
+    }
+
+    pub fn add_with_recording(&self, id: &str, handle: Arc<StreamHandle>, recording: bool) {
+        self.procs.lock().unwrap().insert(id.to_string(), handle);
+        self.recording
+            .lock()
+            .unwrap()
+            .insert(id.to_string(), recording);
     }
 
     pub fn get(&self, id: &str) -> Option<Arc<StreamHandle>> {
@@ -336,6 +347,7 @@ impl ProcessRegistry {
                 format!("no process '{id}'"),
             ));
         };
+        self.recording.lock().unwrap().remove(id);
         handle.stop();
         Ok(())
     }
@@ -344,6 +356,18 @@ impl ProcessRegistry {
         for (_, handle) in self.procs.lock().unwrap().drain() {
             handle.stop();
         }
+        self.recording.lock().unwrap().clear();
+    }
+
+    pub fn is_recording(&self, id: &str) -> bool {
+        self.is_running(id)
+            && self
+                .recording
+                .lock()
+                .unwrap()
+                .get(id)
+                .copied()
+                .unwrap_or(false)
     }
 
     pub fn status(&self, id: &str) -> (bool, Option<u32>) {

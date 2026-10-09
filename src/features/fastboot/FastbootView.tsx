@@ -17,6 +17,7 @@ export function FastbootView() {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState<DestructiveConfig | null>(null);
   const [flashFile, setFlashFile] = useState('');
+  const [getvar, setGetvar] = useState('product');
 
   const load = useCallback(async () => {
     setDevices(null);
@@ -33,7 +34,7 @@ export function FastbootView() {
     setBusy(true);
     setError(null);
     setResult(null);
-    const r = await act(() => getBridge().fastbootExecute(op, confirmation));
+    const r = await act(() => getBridge().fastbootExecute(selected || null, op, confirmation));
     if (r.ok) setResult(r.value);
     else setError(r.error);
     setBusy(false);
@@ -105,10 +106,18 @@ export function FastbootView() {
             <Button
               size="small"
               disabled={!selected || busy}
-              onClick={() => run({ op: 'getvar', var: 'all' })}
+              onClick={() => run({ op: 'getvar', var: getvar.trim() || 'product' })}
             >
               {t('fb.getvar')}
             </Button>
+            <input
+              type="text"
+              value={getvar}
+              onChange={(e) => setGetvar(e.target.value)}
+              placeholder={t('fb.var')}
+              className="mono"
+              aria-label={t('fb.var')}
+            />
             <Button
               size="small"
               disabled={!selected || busy}

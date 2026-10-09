@@ -43,6 +43,7 @@ export function DebloatView({ serial }: { serial: string }) {
   const [risks, setRisks] = useState<Record<string, RiskLevel>>({});
   const [profiles, setProfiles] = useState<DebloatProfile[]>([]);
   const [profile, setProfile] = useState('conservative');
+  const [operation, setOperation] = useState<'disable' | 'uninstall'>('disable');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
@@ -102,12 +103,16 @@ export function DebloatView({ serial }: { serial: string }) {
     setConfirm({
       title: t('debloat.batchTitle'),
       body: t('debloat.batchBody', { n: pkgs.length, pkgs: pkgs.slice(0, 5).join(', ') + (pkgs.length > 5 ? '…' : '') }),
-      word: 'APAGAR',
+      word: operation === 'uninstall' ? 'REMOVER' : 'APAGAR',
       onConfirm: async () => {
         setBusy(true);
         setBatch(null);
+        const op = operation === 'uninstall'
+          ? { op: 'uninstall_for_user' as const, pkg: pkgs[0] ?? '', user: 0 }
+          : { op: 'disable_package' as const, pkg: pkgs[0] ?? '', user: 0 };
+        const confirmation = operation === 'uninstall' ? 'REMOVER' : 'APAGAR';
         const r = await act(() =>
-          getBridge().executeBatch(serial, { op: 'disable_package', pkg: pkgs[0] ?? '', user: 0 }, pkgs, 'APAGAR'),
+          getBridge().executeBatch(serial, op, pkgs, confirmation),
         );
         if (r.ok) {
           setBatch(r.value);
@@ -186,6 +191,13 @@ export function DebloatView({ serial }: { serial: string }) {
         <Button size="small" onClick={selectAllIncluded} disabled={included.length === 0}>
           {t('debloat.selectAll', { n: included.length })}
         </Button>
+        <label className="field" style={{ minWidth: 220 }}>
+          {t('debloat.op')}
+          <select value={operation} onChange={(e) => setOperation(e.target.value as 'disable' | 'uninstall')} disabled={busy}>
+            <option value="disable">{t('debloat.op.disable')}</option>
+            <option value="uninstall">{t('debloat.op.uninstall')}</option>
+          </select>
+        </label>
         <Button variant="primary" size="small" onClick={runBatch} disabled={selected.size === 0 || busy}>
           {t('debloat.execute', { n: selected.size })}
         </Button>

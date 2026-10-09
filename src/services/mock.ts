@@ -906,7 +906,7 @@ export class MockBridge implements Bridge {
     return [{ serial: 'FAKEFB01', state: 'FASTBOOT' }];
   }
 
-  async fastbootExecute(op: FastbootOperation, confirmation?: string): Promise<OpResult> {
+  async fastbootExecute(_serial: string | null, op: FastbootOperation, confirmation?: string): Promise<OpResult> {
     await delay(400);
     if (op.op === 'erase' && confirmation !== 'APAGAR') {
       throw Object.assign(new Error('confirm'), { code: 'CONFIRMATION_REQUIRED', details: 'type APAGAR' });

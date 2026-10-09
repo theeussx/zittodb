@@ -10,7 +10,7 @@ use crate::adb::client::AdbClient;
 use crate::adb::operations::RebootTarget;
 use crate::error::AppError;
 use crate::processes::Captured;
-use crate::security::{validate_getvar, validate_local_path, validate_partition};
+use crate::security::{validate_getvar, validate_local_path, validate_partition, validate_serial};
 use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize)]
@@ -119,9 +119,20 @@ impl FastbootOperation {
     }
 
     pub fn to_args(&self) -> Result<Vec<String>, AppError> {
+        self.to_args_for_serial(None)
+    }
+
+    pub fn to_args_for_serial(&self, serial: Option<&str>) -> Result<Vec<String>, AppError> {
         self.validate()?;
+        let prefix = match serial {
+            Some(serial) => {
+                validate_serial(serial)?;
+                vec!["-s".into(), serial.into()]
+            }
+            None => Vec::new(),
+        };
         use FastbootOperation as O;
-        Ok(match self {
+        let operation = match self {
             O::Devices => vec!["devices".into()],
             O::Reboot { target } => {
                 if *target == RebootTarget::System {
@@ -135,17 +146,26 @@ impl FastbootOperation {
             O::Erase { partition } => vec!["erase".into(), partition.clone()],
             O::Unlock => vec!["oem".into(), "unlock".into()],
             O::Lock => vec!["oem".into(), "lock".into()],
-        })
+        };
+        Ok(prefix.into_iter().chain(operation).collect())
     }
 
     pub fn run(&self, fastboot: &str) -> Result<Captured, AppError> {
+        self.run_on_device(fastboot, None)
+    }
+
+    pub fn run_on_device(
+        &self,
+        fastboot: &str,
+        serial: Option<&str>,
+    ) -> Result<Captured, AppError> {
         let client = AdbClient::new(fastboot);
         let timeout = match self {
             FastbootOperation::Flash { .. } => Duration::from_secs(600),
             FastbootOperation::Erase { .. } => Duration::from_secs(120),
             _ => Duration::from_secs(30),
         };
-        client.run(self.to_args()?, timeout)
+        client.run(self.to_args_for_serial(serial)?, timeout)
     }
 }
 
@@ -220,5 +240,16 @@ mod tests {
 
         let bad = FastbootOperation::Getvar { var: "-v".into() };
         assert!(bad.to_args().is_err());
+    }
+
+    #[test]
+    fn selected_serial_is_included_in_argv() {
+        let op = FastbootOperation::Getvar {
+            var: "product".into(),
+        };
+        assert_eq!(
+            op.to_args_for_serial(Some("FAKEFB01")).unwrap(),
+            vec!["-s", "FAKEFB01", "getvar", "product"]
+        );
     }
 }
