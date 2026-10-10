@@ -55,7 +55,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 .hero-visual { position: relative; min-height: 465px; margin-left: 15px; }
 .visual-glow { position: absolute; top: 14%; right: 3%; width: 85%; height: 70%; background: #1267ff45; filter: blur(65px); transform: rotate(-6deg); }
-.visual-frame { position: absolute; inset: 15px 0 35px 25px; overflow: hidden; border: 1px solid #176cff; border-radius: 19px; background: #050d1e; box-shadow: 0 0 0 1px #20d7ff22, 0 24px 80px #0008, 0 0 65px #1267ff30; transform: rotate(-3deg); }
+.visual-frame { position: absolute; inset: 15px 0 35px 25px; overflow: hidden; border: 1px solid #176cff; border-radius: 19px; background: #050d1e; box-shadow: 0 0 0 1px #20d7ff22, 0 24px 80px #0008, 0 0 65px #1267ff30; }
 .visual-frame::after { position: absolute; inset: 0; z-index: 3; background: linear-gradient(115deg, #1a8dff12, transparent 30%, #20d7ff08); content: ""; pointer-events: none; }
 .frame-top { position: relative; display: flex; align-items: center; justify-content: center; height: 35px; border-bottom: 1px solid #153057; color: #718bb2; background: #071426; font: 10px var(--mono); }
 .traffic { position: absolute; left: 15px; display: flex; gap: 6px; }
