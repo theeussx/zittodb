@@ -3,161 +3,61 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0f14" />
-    <meta name="description" content="Documentação oficial do ZittoDB: uma interface local-first para ADB, scrcpy e fastboot no Linux." />
-    <meta property="og:title" content="ZittoDB · Documentação" />
-    <meta property="og:description" content="Aprenda a instalar, conectar dispositivos Android e usar o ZittoDB com segurança." />
-    <meta property="og:type" content="website" />
-    <title>ZittoDB · Documentação</title>
+    <meta name="theme-color" content="#030711" />
+    <meta name="description" content="ZittoDB — Android Debug Bridge, direto e local. Uma interface local-first para ADB, scrcpy e fastboot no Linux." />
+    <meta property="og:title" content="ZittoDB — Android Debug Bridge, direto e local" />
+    <meta property="og:description" content="Gerencie dispositivos Android com clareza, velocidade e privacidade. Sem nuvem, sem conta, sem telemetria." />
+    <meta property="og:image" content="./assets/BannerfuturistadoZittoDBparaGitHub.png" />
+    <title>ZittoDB — Android Debug Bridge, direto e local</title>
     <link rel="icon" href="./assets/zittodb-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./landing.css" />
   </head>
   <body>
-    <div class="site-shell">
-      <aside class="sidebar" id="sidebar">
-        <a class="brand" href="/docs" aria-label="ZittoDB documentação">
-          <span class="brand-mark">&gt;_</span>
-          <span><strong>ZittoDB</strong><small>Documentação</small></span>
-        </a>
-        <div class="sidebar-rule"></div>
-        <nav class="nav" aria-label="Navegação principal">
-          <p class="nav-label">COMECE AQUI</p>
-          <a href="/docs" data-page="inicio"><span>⌂</span>Visão geral</a>
-          <a href="/docs/download" data-page="download"><span>↓</span>Baixar o app</a>
-          <a href="/docs/instalacao" data-page="instalacao"><span>↓</span>Instalação</a>
-          <a href="/docs/primeiros-passos" data-page="primeiros-passos"><span>→</span>Primeiros passos</a>
-          <p class="nav-label">GUIA DO USUÁRIO</p>
-          <a href="/docs/dispositivos" data-page="dispositivos"><span>▣</span>Dispositivos</a>
-          <a href="/docs/recursos" data-page="recursos"><span>✦</span>Recursos</a>
-          <a href="/docs/seguranca" data-page="seguranca"><span>◇</span>Segurança</a>
-          <p class="nav-label">PROJETO</p>
-          <a href="/docs/desenvolvimento" data-page="desenvolvimento"><span>&lt;/&gt;</span>Desenvolvimento</a>
-          <a href="/docs/arquitetura" data-page="arquitetura"><span>⌘</span>Arquitetura</a>
-          <a href="/docs/contribuindo" data-page="contribuindo"><span>+</span>Contribuindo</a>
-        </nav>
-        <div class="sidebar-footer">
-          <a href="https://github.com/theeussx/zittodb" target="_blank" rel="noreferrer">GitHub <span>↗</span></a>
-          <a href="https://github.com/theeussx/zittodb/releases" target="_blank" rel="noreferrer">Releases <span>↗</span></a>
-          <small>v0.1 · MIT · Linux</small>
+    <div class="noise"></div>
+    <header class="landing-header">
+      <a class="brand" href="/" aria-label="ZittoDB início"><img src="./assets/zittodb-mark.svg" alt="" /><span>Zitto<span>DB</span></span></a>
+      <nav class="landing-nav" aria-label="Navegação principal">
+        <a href="#recursos">Recursos</a><a href="#como-funciona">Como funciona</a><a href="/docs">Documentação</a>
+      </nav>
+      <div class="header-actions"><a class="github" href="https://github.com/theeussx/zittodb" target="_blank" rel="noreferrer">GitHub <span>↗</span></a><a class="mini-cta" href="/docs/download">Baixar release <span>↓</span></a></div>
+    </header>
+
+    <main>
+      <section class="hero wrap">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="live-dot"></span> ANDROID TOOLING · LINUX · OPEN SOURCE</div>
+          <h1>Seu Android.<br /><strong>Sob seu controle.</strong></h1>
+          <p class="hero-lead">Uma interface gráfica leve e local-first para <b>ADB</b>, <b>scrcpy</b> e <b>fastboot</b>. Tudo o que você precisa para depurar, explorar e operar — sem nuvem, sem conta e sem telemetria.</p>
+          <div class="hero-actions"><a class="button primary" href="/docs/download">Baixar o aplicativo <span>↓</span></a><a class="button ghost" href="/docs">Explorar documentação <span>→</span></a></div>
+          <div class="hero-meta"><span><i class="meta-icon">✓</i> Local-first</span><span><i class="meta-icon">◈</i> Tauri 2 + Rust</span><span><i class="meta-icon">⌘</i> Licença MIT</span></div>
         </div>
-      </aside>
-
-      <main class="main">
-        <header class="topbar">
-          <button class="menu-button" id="menu-button" aria-label="Abrir menu">☰</button><a class="top-docs-link" href="/docs">Docs</a>
-          <div class="breadcrumbs"><span>ZittoDB</span><b>/</b><span id="breadcrumb">Visão geral</span></div>
-          <div class="top-actions">
-            <a class="header-download" href="/docs/download">Baixar app <span>↓</span></a>
-            <button class="search-trigger" id="search-trigger" aria-label="Buscar na documentação"><kbd>⌘</kbd><span>Buscar</span><kbd>K</kbd></button>
-            <a class="github-link" href="https://github.com/theeussx/zittodb" target="_blank" rel="noreferrer">GitHub ↗</a>
-          </div>
-        </header>
-
-        <div class="content-wrap">
-          <div class="page-content" id="page-content">
-            <section class="doc-page" data-page="inicio">
-              <div class="eyebrow"><span class="pulse"></span> GUIA OFICIAL · v0.1</div>
-              <h1>Android Debug Bridge,<br /><em>direto e local.</em></h1>
-              <p class="lead">O ZittoDB é uma interface gráfica leve e local-first para trabalhar com <strong>ADB</strong>, <strong>scrcpy</strong> e <strong>fastboot</strong> no Linux — sem nuvem, sem conta e sem telemetria.</p>
-              <div class="hero-actions"><a class="button primary" href="/docs/download">Baixar o aplicativo <span>↓</span></a><a class="button secondary" href="/docs/instalacao">Ver instalação <span>→</span></a></div>
-              <div class="terminal-card"><div class="terminal-head"><span class="traffic"><i></i><i></i><i></i></span><span>terminal</span><span class="terminal-dots">•••</span></div><pre><span class="muted">$</span> <span class="green">sudo apt install adb</span>
-<span class="muted">$</span> <span class="green">chmod +x Zittodb.AppImage</span>
-<span class="muted">$</span> <span class="green">./Zittodb.AppImage</span>
-
-<span class="cyan">✓</span> ZittoDB pronto. Nenhum dado sai da sua máquina.</pre></div>
-              <div class="stat-grid"><div><strong>Local-first</strong><span>sem telemetria</span></div><div><strong>Tauri 2</strong><span>leve e nativo</span></div><div><strong>MIT</strong><span>código aberto</span></div></div>
-              <div class="section-heading"><span>01</span><h2>Uma camada visual para ferramentas que você já conhece</h2></div>
-              <p>O ZittoDB não reimplementa o protocolo ADB. Ele valida a intenção, monta argumentos explícitos e deixa <code>adb</code>, <code>scrcpy</code> e <code>fastboot</code> fazerem o trabalho. Assim, a interface fica mais clara sem esconder o que realmente será executado.</p>
-              <div class="callout"><span class="callout-icon">i</span><div><strong>Importante</strong><p>O projeto está em desenvolvimento ativo. A versão desktop é o caminho completo; o modo navegador existe para desenvolvimento, demonstração e testes.</p></div></div>
-            </section>
-
-            <section class="doc-page" data-page="download">
-              <div class="eyebrow"><span class="pulse"></span> DISTRIBUIÇÃO OFICIAL</div><h1>Baixe o <em>ZittoDB</em></h1><p class="lead">Escolha o formato que combina com o seu Linux. O aplicativo desktop é o caminho completo para controlar aparelhos Android com ADB, scrcpy e fastboot.</p>
-              <div class="download-status"><span class="status-dot"></span><div><strong>Próxima release em preparação</strong><p>Os binários AppImage e `.deb` ainda não foram publicados no GitHub. Enquanto isso, você já pode baixar o código-fonte ou compilar localmente.</p></div></div>
-              <div class="download-hero-card"><div class="download-hero-icon">&gt;_</div><div><span class="download-kicker">ZITTODB · LINUX</span><h2>O app nativo, sem Electron</h2><p>Tauri 2 + Rust + React. Leve, local-first e sem telemetria.</p></div><a class="download-main-button" href="https://github.com/theeussx/zittodb/releases">Abrir Releases <span>↗</span></a></div>
-              <div class="section-heading"><span>01</span><h2>Qual arquivo devo escolher?</h2></div>
-              <div class="download-options"><article class="download-option"><div class="option-top"><span class="file-icon">▰</span><span class="option-badge">RECOMENDADO</span></div><h3>AppImage</h3><p>Portátil: baixe, dê permissão de execução e abra. Não altera o sistema e funciona bem em diferentes distribuições.</p><div class="download-option-footer"><code>Zittodb-*.AppImage</code><span>ideal para testar</span></div></article><article class="download-option"><div class="option-top"><span class="file-icon">▣</span><span class="option-badge neutral">DEBIAN</span></div><h3>Pacote `.deb`</h3><p>Integração tradicional em Debian, Ubuntu e derivados, com instalação pelo gerenciador de pacotes.</p><div class="download-option-footer"><code>Zittodb-*.deb</code><span>ideal para instalar</span></div></article></div>
-              <div class="section-heading"><span>02</span><h2>O que está disponível agora</h2></div>
-              <div class="source-download"><div><span class="source-icon">&lt;/&gt;</span><div><strong>Código-fonte no GitHub</strong><p>Baixe a branch principal como `.zip` e rode o ZittoDB em modo demo ou compile o aplicativo desktop.</p></div></div><a class="button secondary" href="https://github.com/theeussx/zittodb/archive/refs/heads/main.zip">Baixar código-fonte <span>↓</span></a></div>
-              <div class="download-steps"><div><span>1</span><strong>Baixe uma release</strong><small>AppImage ou `.deb` quando publicada</small></div><div><span>2</span><strong>Instale o ADB</strong><small><code>sudo apt install adb fastboot</code></small></div><div><span>3</span><strong>Conecte seu Android</strong><small>Ative a Depuração USB e aceite a chave RSA</small></div></div>
-              <div class="callout"><span class="callout-icon">i</span><div><strong>Importante sobre downloads</strong><p>O ZittoDB não embute ADB, scrcpy ou fastboot. Depois de instalar o aplicativo, instale essas ferramentas no sistema seguindo o <a href="/docs/instalacao">guia de instalação</a>.</p></div></div>
-            </section>
-
-            <section class="doc-page" data-page="instalacao">
-              <div class="eyebrow">COMECE AQUI</div><h1>Instalação</h1><p class="lead">A forma recomendada é baixar uma release pronta. Se quiser contribuir ou testar a versão em desenvolvimento, use o setup local.</p>
-              <div class="section-heading"><span>01</span><h2>Para usar o aplicativo</h2></div>
-              <p>Baixe o artefato correspondente na página de <a href="https://github.com/theeussx/zittodb/releases" target="_blank" rel="noreferrer">Releases</a>:</p>
-              <div class="choice-grid"><div class="choice-card"><span class="choice-icon">▰</span><h3>AppImage</h3><p>Portátil e sem instalação no sistema.</p><pre>chmod +x ./*.AppImage
-./Zittodb-*.AppImage</pre></div><div class="choice-card"><span class="choice-icon">▣</span><h3>Debian / Ubuntu</h3><p>Integração tradicional com o sistema.</p><pre>sudo apt install ./*.deb</pre></div></div>
-              <div class="section-heading"><span>02</span><h2>Dependências do sistema</h2></div>
-              <p>O ZittoDB usa as ferramentas oficiais instaladas no seu Linux:</p><pre class="code-block">sudo apt update
-sudo apt install adb fastboot
-# scrcpy é opcional, para espelhamento e gravação
-sudo apt install scrcpy</pre>
-              <ul class="check-list"><li><b>ADB</b> é necessário para detectar e controlar aparelhos Android.</li><li><b>scrcpy 3.2+</b> é necessário para o espelhamento compatível com Android 15.</li><li><b>fastboot</b> só é necessário para a aba Fastboot.</li></ul>
-              <div class="callout warning"><span class="callout-icon">!</span><div><strong>scrcpy no Ubuntu</strong><p>O pacote da distribuição pode estar desatualizado. Para Android 15, prefira o release oficial do scrcpy.</p></div></div>
-            </section>
-
-            <section class="doc-page" data-page="primeiros-passos">
-              <div class="eyebrow">COMECE AQUI</div><h1>Primeiros passos</h1><p class="lead">Em poucos minutos você conecta um aparelho, confirma a autorização e chega às ferramentas principais.</p>
-              <div class="steps"><div class="step"><span>01</span><div><h3>Ative a depuração USB</h3><p>No Android, habilite as opções de desenvolvedor e a <strong>Depuração USB</strong>. Conecte o cabo e desbloqueie a tela.</p></div></div><div class="step"><span>02</span><div><h3>Confirme a chave RSA</h3><p>Na primeira conexão, aceite a janela de autorização no aparelho. O ZittoDB nunca tenta burlar essa etapa.</p></div></div><div class="step"><span>03</span><div><h3>Selecione o dispositivo</h3><p>Abra <strong>Dispositivos</strong>, escolha o serial conectado e explore as abas de visão geral, aplicativos, arquivos, shell e logs.</p></div></div></div>
-              <div class="section-heading"><span>04</span><h2>Se o aparelho não aparecer</h2></div><pre class="code-block">adb devices -l</pre><div class="table-wrap"><table><thead><tr><th>Estado</th><th>Significado</th><th>O que fazer</th></tr></thead><tbody><tr><td><span class="status ok"></span> device</td><td>Conectado e autorizado</td><td>Pronto para usar</td></tr><tr><td><span class="status warn"></span> unauthorized</td><td>A chave RSA ainda não foi aceita</td><td>Desbloqueie e aceite no aparelho</td></tr><tr><td><span class="status off"></span> offline</td><td>A conexão não respondeu</td><td>Reconecte o cabo ou reinicie o ADB</td></tr></tbody></table></div>
-            </section>
-
-            <section class="doc-page" data-page="dispositivos">
-              <div class="eyebrow">GUIA DO USUÁRIO</div><h1>Dispositivos</h1><p class="lead">O centro do ZittoDB é o painel do dispositivo. Cada ação é direcionada ao serial selecionado — nunca a um aparelho escolhido implicitamente.</p>
-              <div class="feature-list"><div><span class="feature-number">A</span><div><h3>USB, Wi-Fi e emuladores</h3><p>A lista identifica o tipo de conexão e exibe estados como conectado, offline, não autorizado e recovery.</p></div></div><div><span class="feature-number">B</span><div><h3>Conexão por Wi-Fi</h3><p>Use a ação de conectar com host e porta. Para o modo navegador, você também pode usar <code>adb connect IP:PORTA</code> no terminal.</p></div></div><div><span class="feature-number">C</span><div><h3>Informações sob demanda</h3><p>Consulte propriedades, bateria, armazenamento, rede, memória e patch de segurança sem coleta contínua.</p></div></div></div>
-              <div class="section-heading"><span>02</span><h2>O que existe dentro do dispositivo</h2></div><div class="pill-grid"><span>Visão geral</span><span>Tela</span><span>Aplicativos</span><span>Arquivos</span><span>Shell</span><span>Logs</span><span>Diagnóstico</span><span>Debloat</span></div>
-              <div class="callout"><span class="callout-icon">↗</span><div><strong>Shell persistente</strong><p>O shell é interativo e sempre usa o dispositivo selecionado. O ZittoDB não executa comandos automaticamente por você.</p></div></div>
-            </section>
-
-            <section class="doc-page" data-page="recursos">
-              <div class="eyebrow">GUIA DO USUÁRIO</div><h1>Recursos</h1><p class="lead">Uma visão prática das áreas disponíveis no aplicativo desktop.</p>
-              <div class="resource-grid"><article><span>01</span><h3>Espelhamento</h3><p>Abra o scrcpy com presets de baixo, equilibrado ou alto desempenho. Grave em MP4 sem sobrescrever arquivos existentes.</p></article><article><span>02</span><h3>Aplicativos</h3><p>Liste pacotes, abra, ative, desative, limpe dados, desinstale por usuário e instale APKs.</p></article><article><span>03</span><h3>Arquivos</h3><p>Navegue pelo <code>/sdcard</code>, crie pastas, renomeie, apague e faça push/pull com acompanhamento.</p></article><article><span>04</span><h3>Logs</h3><p>Leia logcat em streaming, filtre por <code>TAG:PRIORITY</code>, pause, copie ou salve o conteúdo.</p></article><article><span>05</span><h3>Debloat</h3><p>Classifique riscos por heurística, aplique perfis conservador a avançado e reverta pelo Histórico.</p></article><article><span>06</span><h3>Fastboot</h3><p>Consulte variáveis e reinicie. Flash, erase, lock e unlock exigem confirmação digitada.</p></article></div>
-              <div class="section-heading"><span>07</span><h2>Atalhos de teclado</h2></div><div class="shortcut-list"><div><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>D</kbd><span>Dispositivos</span></div><div><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>A</kbd><span>Shell</span></div><div><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd><span>Screenshot</span></div><div><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>F</kbd><span>Arquivos</span></div><div><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>L</kbd><span>Logs</span></div></div>
-            </section>
-
-            <section class="doc-page" data-page="seguranca">
-              <div class="eyebrow">GUIA DO USUÁRIO</div><h1>Segurança</h1><p class="lead">A interface mostra o que vai acontecer, mas a decisão final de execução pertence ao backend Rust.</p>
-              <div class="security-banner"><span class="shield">◇</span><div><strong>O frontend exibe dados. O backend executa operações.</strong><p>Essa separação evita que uma entrada da interface vire um comando arbitrário.</p></div></div>
-              <div class="security-grid"><div><span>01</span><h3>Allowlist em Rust</h3><p>As operações são tipos explícitos e viram vetores de argumentos validados. Não existe <code>sh -c</code> para montar comandos.</p></div><div><span>02</span><h3>Confirmações digitadas</h3><p>Ações destrutivas pedem palavras exatas como <code>APAGAR</code>, <code>REMOVER</code>, <code>REINICIAR</code> ou <code>FLASHAR</code>.</p></div><div><span>03</span><h3>Serial explícito</h3><p>Cada operação recebe o serial do dispositivo selecionado, evitando o alvo implícito “qualquer dispositivo”.</p></div><div><span>04</span><h3>Sem telemetria</h3><p>Configurações, auditoria, histórico e logs ficam no filesystem local. A única consulta externa é a metadata pública de releases.</p></div></div>
-              <div class="section-heading"><span>05</span><h2>Onde os dados ficam</h2></div><pre class="code-block">~/.config/app.zittodb.desktop/
-├── settings.json
-└── audit.jsonl
-
-~/.local/share/app.zittodb.desktop/
-└── logs/zittodb.log</pre><p>Leia o <a href="https://github.com/theeussx/zittodb/blob/main/docs/SECURITY.md">modelo de ameaças completo</a> para detalhes de armazenamento, processos e limites.</p>
-            </section>
-
-            <section class="doc-page" data-page="desenvolvimento">
-              <div class="eyebrow">PROJETO</div><h1>Desenvolvimento</h1><p class="lead">O repositório é um app Tauri 2 com frontend React/TypeScript e backend Rust.</p>
-              <div class="section-heading"><span>01</span><h2>Ambiente</h2></div><pre class="code-block">git clone https://github.com/theeussx/zittodb.git
-cd zittodb
-npm install
-npm run dev:demo</pre><p>Para testar com ADB real no navegador, use <code>npm run dev</code>. Para o app desktop completo, use <code>npm run tauri:dev</code>.</p>
-              <div class="section-heading"><span>02</span><h2>Comandos úteis</h2></div><div class="command-list"><div><code>npm run build</code><span>TypeScript + build de produção</span></div><div><code>npm test</code><span>Testes frontend com Vitest</span></div><div><code>make test-rust</code><span>Testes do backend Rust</span></div><div><code>npm run tauri:build</code><span>Gera AppImage e .deb</span></div><div><code>npm run check</code><span>Build e testes principais</span></div></div>
-              <div class="callout"><span class="callout-icon">↗</span><div><strong>Documentação de engenharia</strong><p>Consulte <a href="https://github.com/theeussx/zittodb/blob/main/docs/DEVELOPMENT.md">docs/DEVELOPMENT.md</a> para toolchain, debug, performance e release.</p></div></div>
-            </section>
-
-            <section class="doc-page" data-page="arquitetura">
-              <div class="eyebrow">PROJETO</div><h1>Arquitetura</h1><p class="lead">A arquitetura é desktop-first, local-first e orientada a fronteiras claras.</p>
-              <div class="architecture-flow"><div>React<br /><small>UI + Zustand</small></div><b>→</b><div>Bridge<br /><small>Tauri · local · mock</small></div><b>→</b><div>Rust<br /><small>validação + processos</small></div><b>→</b><div>Ferramentas<br /><small>adb · scrcpy · fastboot</small></div></div>
-              <div class="section-heading"><span>02</span><h2>Princípios</h2></div><ol class="number-list"><li><strong>Leve primeiro.</strong> Sem Electron e sem ADB embutido.</li><li><strong>Backend dono da execução.</strong> A UI descreve o quê; o Rust controla como.</li><li><strong>Operações tipadas.</strong> Ações novas entram na allowlist e ganham testes.</li><li><strong>Concorrência por serial.</strong> Operações conflitantes no mesmo aparelho são serializadas.</li></ol>
-              <p>Veja o <a href="https://github.com/theeussx/zittodb/blob/main/docs/ARCHITECTURE.md">documento de arquitetura</a> para o contrato Bridge, timeouts, eventos e storage.</p>
-            </section>
-
-            <section class="doc-page" data-page="contribuindo">
-              <div class="eyebrow">PROJETO</div><h1>Contribuindo</h1><p class="lead">Issues, melhorias de UI, testes e correções de segurança são bem-vindos.</p>
-              <div class="section-heading"><span>01</span><h2>Fluxo recomendado</h2></div><div class="steps compact"><div class="step"><span>01</span><div><h3>Entenda o domínio</h3><p>Leia o README e os documentos em <code>docs/</code> antes de alterar uma fronteira.</p></div></div><div class="step"><span>02</span><div><h3>Faça uma mudança pequena</h3><p>Preserve o contrato Bridge e mantenha mensagens localizadas em pt-BR/en-US.</p></div></div><div class="step"><span>03</span><div><h3>Valide antes de abrir PR</h3><p>Rode <code>npm run check</code> e, quando disponível, <code>make test-rust</code>.</p></div></div></div>
-              <div class="section-heading"><span>02</span><h2>Recursos do projeto</h2></div><div class="link-cards"><a href="https://github.com/theeussx/zittodb/blob/main/docs/CONTRIBUTING.md"><strong>Guia de contribuição</strong><span>padrões e revisão →</span></a><a href="https://github.com/theeussx/zittodb/blob/main/CHANGELOG.md"><strong>Changelog</strong><span>histórico de versões →</span></a><a href="https://github.com/theeussx/zittodb/issues" target="_blank" rel="noreferrer"><strong>Issues no GitHub</strong><span>discutir uma ideia →</span></a></div>
-            </section>
-          </div>
-          <aside class="toc"><p>NESTA PÁGINA</p><a href="/docs" id="toc-first">Visão geral</a><a href="/docs/instalacao">Instalação</a><a href="/docs/primeiros-passos">Primeiros passos</a><div class="toc-divider"></div><a href="https://github.com/theeussx/zittodb" target="_blank" rel="noreferrer">Editar no GitHub ↗</a></aside>
+        <div class="hero-visual">
+          <div class="visual-glow"></div>
+          <div class="visual-frame"><div class="frame-top"><span class="traffic"><i></i><i></i><i></i></span><span>zittodb — devices</span><span class="frame-status"><b></b> local session</span></div><img src="./assets/BannerfuturistadoZittoDBparaGitHub.png" alt="Interface do ZittoDB gerenciando um Pixel 7 Pro" /></div>
+          <div class="float-chip chip-one"><span class="chip-dot green"></span><div><b>ADB online</b><small>Pixel 7 Pro · emulator-5554</small></div></div>
+          <div class="float-chip chip-two"><span class="chip-symbol">⌁</span><div><b>Sem telemetria</b><small>seus dados ficam aqui</small></div></div>
         </div>
-        <footer class="footer"><span>© 2025–2026 ZittoDB · MIT License</span><span>Feito para quem prefere saber exatamente o que está executando.</span></footer>
-      </main>
-    </div>
-    <div class="search-modal" id="search-modal" aria-hidden="true"><div class="search-backdrop" data-close-search></div><div class="search-panel"><div class="search-input-wrap"><span>⌕</span><input id="search-input" type="search" placeholder="Buscar na documentação..." autocomplete="off" /><kbd>Esc</kbd></div><div id="search-results"></div><small>Use ↑ ↓ para navegar · Enter para abrir</small></div></div>
-    <script src="./app.js"></script>
+      </section>
+
+      <section class="trust-bar"><div class="wrap trust-inner"><span>UMA CAMADA VISUAL PARA FERRAMENTAS QUE VOCÊ JÁ CONHECE</span><div class="trust-items"><b>ADB</b><i>+</i><b>scrcpy</b><i>+</i><b>fastboot</b><em>→</em><span>interface clara, execução explícita</span></div></div></section>
+
+      <section class="feature-section wrap" id="recursos">
+        <div class="section-intro"><div class="eyebrow">O KIT COMPLETO</div><h2>Menos terminal.<br /><em>Mais contexto.</em></h2><p>O ZittoDB não esconde o que acontece. Ele organiza a complexidade, valida cada intenção e deixa você no comando do dispositivo selecionado.</p></div>
+        <div class="feature-grid">
+          <article class="feature-card feature-blue"><span class="feature-number">01</span><div class="feature-icon">▣</div><h3>Dispositivos</h3><p>Descoberta via USB, Wi-Fi e emuladores. Estados claros, serial visível e nenhuma ação em alvo implícito.</p><a href="/docs/dispositivos">Ver guia <span>→</span></a></article>
+          <article class="feature-card feature-green"><span class="feature-number">02</span><div class="feature-icon">◆</div><h3>Aplicativos</h3><p>Liste, instale, desinstale, extraia APKs e aplique debloat com perfis e reversão pelo histórico.</p><a href="/docs/recursos">Ver recursos <span>→</span></a></article>
+          <article class="feature-card feature-purple"><span class="feature-number">03</span><div class="feature-icon">▰</div><h3>Arquivos</h3><p>Navegue pelo /sdcard, crie pastas, renomeie, apague e faça push/pull com progresso visível.</p><a href="/docs/recursos">Ver recursos <span>→</span></a></article>
+          <article class="feature-card feature-cyan"><span class="feature-number">04</span><div class="feature-icon">&gt;_</div><h3>Shell &amp; logs</h3><p>Shell persistente por dispositivo e logcat em tempo real, com filtros, pausa, cópia e download.</p><a href="/docs/recursos">Ver recursos <span>→</span></a></article>
+          <article class="feature-card feature-amber"><span class="feature-number">05</span><div class="feature-icon">ϟ</div><h3>Fastboot</h3><p>Variáveis, reboot, flash, erase, lock e unlock com confirmação explícita para ações destrutivas.</p><a href="/docs/recursos">Ver recursos <span>→</span></a></article>
+          <article class="feature-card feature-pink"><span class="feature-number">06</span><div class="feature-icon">◆</div><h3>Seguro por design</h3><p>Rust controla allowlist, serial, argumentos, processos, auditoria local e o ciclo de vida de cada ação.</p><a href="/docs/seguranca">Ler segurança <span>→</span></a></article>
+        </div>
+      </section>
+
+      <section class="how-section" id="como-funciona"><div class="wrap how-inner"><div class="eyebrow">COMO FUNCIONA</div><h2>Você clica.<br /><span>O sistema explica.</span></h2><div class="flow"><div><small>01</small><strong>Intenção</strong><p>Escolha uma ação e um dispositivo pelo serial.</p></div><b>→</b><div><small>02</small><strong>Validação</strong><p>Rust verifica parâmetros, permissões e confirmação.</p></div><b>→</b><div><small>03</small><strong>Execução</strong><p>ADB, scrcpy ou fastboot executa sem shell implícito.</p></div><b>→</b><div><small>04</small><strong>Histórico</strong><p>O resultado fica disponível na sua auditoria local.</p></div></div></div></section>
+
+      <section class="cta-section wrap"><div class="cta-panel"><div><div class="eyebrow"><span class="live-dot"></span> PRONTO PARA COMEÇAR?</div><h2>Depure com clareza.<br /><em>Opere com confiança.</em></h2><p>Instale o ZittoDB no Linux ou leia o guia para entender cada detalhe antes de conectar seu primeiro dispositivo.</p></div><div class="cta-actions"><a class="button primary" href="/docs/download">Baixar release <span>↓</span></a><a class="button ghost" href="/docs/instalacao">Ler instalação <span>→</span></a></div></div></section>
+    </main>
+
+    <footer class="landing-footer"><div class="wrap footer-inner"><a class="brand" href="/"><img src="./assets/zittodb-mark.svg" alt="" /><span>Zitto<span>DB</span></span></a><div class="footer-links"><a href="/docs">Documentação</a><a href="https://github.com/theeussx/zittodb" target="_blank" rel="noreferrer">GitHub ↗</a><a href="/docs/seguranca">Segurança</a></div><span class="copyright">ZITTO + DB = DEBUG BRIDGE · MIT</span></div></footer>
   </body>
 </html>

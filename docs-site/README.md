@@ -1,6 +1,11 @@
-# Site de documentação do ZittoDB
+# Site do ZittoDB
 
-O site é uma página estática sem dependências adicionais, mantida no diretório `docs-site/` do repositório principal. A navegação segue o sistema do Pterodroid: grupos de documentação, rotas `/docs/...`, busca, sumário por página, copiar comandos e navegação anterior/próxima.
+O site é uma experiência estática sem dependências adicionais, mantida em `docs-site/`.
+
+- `/` — landing page do produto, com a apresentação visual do ZittoDB, recursos, fluxo de uso e CTAs.
+- `/docs` — documentação completa com navegação por páginas, busca, sumário, copiar comandos e navegação anterior/próxima.
+
+A identidade visual combina azul profundo, ciano elétrico e cartões técnicos inspirados na interface do aplicativo. A imagem `assets/BannerfuturistadoZittoDBparaGitHub.png` é a referência visual central da landing.
 
 ## Publicar na Vercel
 
@@ -10,21 +15,14 @@ O site é uma página estática sem dependências adicionais, mantida no diretó
 4. Deixe o comando de build vazio.
 5. Publique.
 
-A Vercel servirá `index.html` diretamente. Não é necessário instalar dependências nem configurar uma API.
+O `vercel.json` reescreve `/docs/*` para `docs/index.html`. Não é necessário instalar dependências nem configurar uma API.
 
 ## Desenvolvimento local
 
-A partir da raiz do repositório, rode um servidor estático simples:
+A partir da raiz do repositório:
 
 ```bash
 python3 -m http.server 4173 --directory docs-site
 ```
 
-Abra <http://localhost:4173>.
-
-
-## Sistema de documentação
-
-As páginas são seções sem dependências externas dentro de `index.html`; `app.js` monta a navegação por rota, o índice de busca, o sumário e os controles de código. O `vercel.json` reescreve `/docs/*` para a página principal, como no site de referência.
-
-Também existem páginas espelho em `docs/` para que links como `/docs/download` continuem funcionando mesmo quando a configuração de rewrites da Vercel ainda não estiver ativa no projeto.
+Abra <http://localhost:4173> ou <http://localhost:4173/docs>.
