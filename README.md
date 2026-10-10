@@ -150,20 +150,16 @@ O frontend abre em `http://localhost:1420`. O modo demo não executa comandos re
 | `Ctrl+Shift+F` | Arquivos |
 | `Ctrl+Shift+L` | Logs |
 
-## Arquitetura
+### Visão geral da arquitetura
 
-```text
-React + TypeScript
-      │  Bridge (Tauri · local · mock)
-      ▼
-Tauri commands + operações tipadas (Rust)
-      │  validação · allowlist · risco · serial
-      ▼
-ProcessRegistry + storage local
-      │
-      ├── adb
-      ├── scrcpy
-      └── fastboot
+O ZittoDB separa a interface gráfica da execução dos comandos Android. O frontend comunica-se com o backend por uma bridge tipada; o Rust valida as operações e gerencia os processos externos, enquanto o histórico e as configurações permanecem no sistema local.
+
+<p align="center">
+  <img src="docs/assets/ArquiteturaZittoDB.png" alt="Diagrama da arquitetura do ZittoDB: interface React, bridge Tauri, runtime Rust, ferramentas ADB, scrcpy e fastboot, armazenamento local e serviço de atualização" width="100%" />
+</p>
+
+*O diagrama apresenta uma visão geral dos componentes e das suas relações. Consulte [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para detalhes de implementação.*
+
 ```
 
 O frontend conhece o contrato `Bridge`, não os detalhes de execução. O backend Rust:
