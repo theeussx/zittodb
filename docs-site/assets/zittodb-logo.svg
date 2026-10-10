@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 168" width="660" height="168" role="img" aria-label="Zittodb — Android Debug Bridge, direto e local">
+  <title>Zittodb — Android Debug Bridge, direto e local</title>
+  <desc>Lockup da marca Zittodb: marca gráfica (Z + cursor) e wordmark.</desc>
+
+  <defs>
+    <clipPath id="markRound">
+      <rect x="0" y="0" width="128" height="128" rx="25" ry="25" />
+    </clipPath>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151a21" />
+      <stop offset="1" stop-color="#0e1116" />
+    </linearGradient>
+  </defs>
+
+  <!-- card: the same panel color as the app UI, so the logo reads on any theme -->
+  <rect x="1" y="1" width="658" height="166" rx="20" ry="20" fill="url(#cardBg)" stroke="#232b36" stroke-width="2" />
+
+  <!-- mark -->
+  <g transform="translate(24 20)">
+    <g clip-path="url(#markRound)">
+      <rect width="128" height="128" fill="#10151c" />
+      <g stroke="#3ddc84" stroke-width="17" stroke-linecap="butt" fill="none">
+        <path d="M34 37.5 H94" />
+        <path d="M94 37.5 L34 90.5" />
+        <path d="M34 90.5 H94" />
+      </g>
+      <rect x="34" y="106" width="60" height="10.5" fill="#3ddc84" />
+    </g>
+  </g>
+
+  <!-- wordmark -->
+  <text
+    x="184"
+    y="88"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    font-size="62"
+    font-weight="700"
+    letter-spacing="-1.5"
+    fill="#e7edf5"
+  >Zittodb</text>
+
+  <!-- tagline -->
+  <text
+    x="186"
+    y="122"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    font-size="21"
+    font-weight="500"
+    letter-spacing="0.2"
+    fill="#8a97a8"
+  >Android Debug Bridge, direto e local.</text>
+</svg>
