@@ -34,8 +34,13 @@ import type {
   ReportPrivacy,
   ScrcpyOptions,
   ScrcpyStatus,
+  ScanDiff,
+  ScanReport,
+  ScanSummary,
+  ScanTarget,
   ScreenshotResult,
   Settings,
+  ShellAssessment,
   ToolName,
   ToolStatus,
 } from '../types';
@@ -85,7 +90,14 @@ export interface Bridge {
 
   // shell
   shellOpen(serial: string): Promise<{ id: string; serial: string }>;
-  shellWrite(id: string, data: string): Promise<void>;
+  scanRun(target: ScanTarget, serial: string | null, lang: string): Promise<ScanReport>;
+  scanHistory(): Promise<ScanSummary[]>;
+  scanGet(id: string): Promise<ScanReport>;
+  scanDelete(id: string): Promise<void>;
+  scanExport(id: string, format: 'json' | 'markdown'): Promise<string>;
+  scanCompare(before: string, after: string): Promise<ScanDiff>;
+  shellClassify(line: string): Promise<ShellAssessment>;
+  shellWrite(id: string, data: string, confirmation?: string): Promise<void>;
   shellClose(id: string): Promise<void>;
   shellCloseAll(): Promise<number>;
 
@@ -276,8 +288,29 @@ class TauriBridge implements Bridge {
   shellOpen(serial: string) {
     return this.call<{ id: string; serial: string }>('shell_open', { serial });
   }
-  shellWrite(id: string, data: string) {
-    return this.call<void>('shell_write', { id, data });
+  scanRun(target: ScanTarget, serial: string | null, lang: string) {
+    return this.call<ScanReport>('scan_run', { target, serial, lang });
+  }
+  scanHistory() {
+    return this.call<ScanSummary[]>('scan_history');
+  }
+  scanGet(id: string) {
+    return this.call<ScanReport>('scan_get', { id });
+  }
+  scanDelete(id: string) {
+    return this.call<void>('scan_delete', { id });
+  }
+  scanExport(id: string, format: 'json' | 'markdown') {
+    return this.call<string>('scan_export', { id, format });
+  }
+  scanCompare(before: string, after: string) {
+    return this.call<ScanDiff>('scan_compare', { before, after });
+  }
+  shellClassify(line: string) {
+    return this.call<ShellAssessment>('shell_classify', { line });
+  }
+  shellWrite(id: string, data: string, confirmation?: string) {
+    return this.call<void>('shell_write', { id, data, confirmation: confirmation ?? null });
   }
   shellClose(id: string) {
     return this.call<void>('shell_close', { id });

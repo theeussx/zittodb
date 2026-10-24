@@ -14,7 +14,7 @@ import type {
   Language,
 } from '../types';
 
-export type Nav = 'devices' | 'builder' | 'fastboot' | 'history' | 'settings';
+export type Nav = 'devices' | 'scanner' | 'builder' | 'fastboot' | 'history' | 'settings';
 export type DeviceTab =
   | 'overview'
   | 'screen'

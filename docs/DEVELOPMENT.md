@@ -16,7 +16,7 @@
 ## Setup
 
 ```bash
-git clone https://github.com/theeussx/zittodb.git && cd wadb
+git clone https://github.com/theeussx/zittodb.git && cd zittodb
 npm install
 ```
 

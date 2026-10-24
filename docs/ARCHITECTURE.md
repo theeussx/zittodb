@@ -64,9 +64,9 @@ Exemplos de argv produzidos:
 - **`ProcessRegistry`** — mapa `id → Child`; `Drop` mata o processo; `on_exit` do app derruba tudo (sem órfãos).
 - **Matar:** `SIGTERM` → espera 3 s → `SIGKILL` (via `libc`).
 - **Timeouts:** dispositivos 15 s · props 30 s · dump 60 s · mídia 30 s · install 600 s · transfer 3.600 s.
-- **Shell:** sessão persistente por dispositivo; escrita via stdin; saída em eventos; nunca executa comando por conta própria.
-- **Logcat:** `adb -s S logcat -v threadtime [TAG:PRIORITY]` (spec validado); linhas em evento; buffer limitado no frontend (padrão 5.000).
-- **Transfers:** `pull` tem progresso real (poll do tamanho local a cada 300 ms vs `stat -c %s` remoto); `push` é indeterminado (o adb não expõe progresso); cancelar mata o child.
+- **Shell:** sessão persistente por dispositivo; o backend grava UMA linha por chamada e acrescenta o `\n` (contrato idêntico ao do servidor de desenvolvimento); a linha passa pelo classificador de risco (ver SECURITY §3.1); saída em eventos; nunca executa comando por conta própria.
+- **Logcat:** `adb -s S logcat -v threadtime [TAG:PRIORITY]` (spec validado); linhas em evento; buffer limitado no frontend (padrão 5.000). A leitura dos pipes é feita em bytes com conversão tolerante: saída com UTF-8 inválido não encerra mais o stream.
+- **Transfers:** `pull` tem progresso real (poll do tamanho local a cada 300 ms vs `stat -c %s` remoto); `push` é indeterminado (o adb não expõe progresso); cancelar mata o child. O resultado é decidido pelo **código de saída** do adb, não por texto da saída (o adb moderno imprime `N files pushed, 0 skipped … (B bytes in Ts)` e nomes de arquivo podem conter "error").
 
 ## scrcpy
 
@@ -103,3 +103,18 @@ Exemplos de argv produzidos:
 
 - `tauri.conf.json`: janela 1120×720 (mín 880×560); `freezePrototype: true`; sem CSP restritiva (o app não carrega fontes remotas nem eval).
 - Alvos: **AppImage** e **.deb** (`bundle.targets`). Flatpak: configuração documentada em `docs/DEVELOPMENT.md`.
+
+## Scanner Center (`src-tauri/src/scanner`)
+
+Duas varreduras reais, ambas **somente leitura**, cada uma dividida em *coleta* (efeitos: processos, arquivos) e *avaliação* (função pura sobre um snapshot, testada sem dispositivo):
+
+| Alvo | Coleta | Regras (id) |
+|---|---|---|
+| `environment` | `adb version`, `adb server-status`, PATH, modo do binário, `ANDROID_SERIAL`, detecção de ferramentas existente | `ENV-ADB-MISSING`, `ENV-ADB-VERSION-OLD`, `ENV-FASTBOOT-MISSING`, `ENV-SCRCPY-MISSING`, `ENV-ADB-MDNS-OFF`, `ENV-ANDROID-SERIAL-SET`, `ENV-ADB-MULTIPLE`, `ENV-ADB-WRITABLE` |
+| `device` | operações da allowlist: `GetProps`, `GetBattery`, `GetDiskUsage /data`, `GetSelinuxMode` (novo, `getenforce`) | `DEV-UNAUTHORIZED`, `DEV-OFFLINE`, `DEV-ADB-TCP`, `DEV-BOOTLOADER-UNLOCKED`, `DEV-DEBUGGABLE-BUILD`, `DEV-PATCH-OLD`, `DEV-SELINUX-PERMISSIVE`, `DEV-LOW-STORAGE`, `DEV-BATTERY-HEALTH`, `DEV-BATTERY-HOT`, `DEV-SCRCPY-LIMITS` |
+
+Modelo (`scanner/model.rs`): `Finding` com id estável (`ZF-` + SHA-256 de regra|alvo|assunto, **não** das evidências), severidade (info → critical), confiança, evidências, método de detecção, impacto, recomendação e reversibilidade. Todo `ScanReport` traz também a lista de **verificações tentadas** (`passed`/`found`/`skipped`/`error`) e as **limitações** do tipo de varredura: "sem achados" nunca é apresentado como "seguro". `diff_reports` só marca um achado como *resolvido* se a verificação correspondente foi avaliada de novo.
+
+Histórico: `storage/scans.rs` (um JSON por varredura em `<data>/scans/`, ids validados contra path traversal, escrita atômica, modo 0600, últimas 50). Exportação (`json`/`markdown`) e comparação leem do histórico no backend. Textos em pt-BR/en-US vêm do backend (parâmetro `lang`); os ids de regra não mudam com o idioma.
+
+Ainda não há ações de correção automática (`Finding.action` é sempre `null`) nem varredura de APK/projeto.

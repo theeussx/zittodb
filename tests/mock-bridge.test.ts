@@ -295,3 +295,13 @@ it('stopping one logcat session does not stop another', async () => {
     await b.logcatStop(id2);
   } finally { vi.clearAllTimers(); vi.useRealTimers(); }
 });
+
+describe('MockBridge shell gate (mirrors the backend contract)', () => {
+  it('refuses a destructive line without EXECUTAR and accepts it with the word', async () => {
+    const b = new MockBridge();
+    const s = await b.shellOpen('23021RAA2Y');
+    await expect(b.shellWrite(s.id, 'rm -rf /sdcard/x')).rejects.toMatchObject({ code: 'CONFIRMATION_REQUIRED' });
+    await expect(b.shellWrite(s.id, 'rm -rf /sdcard/x', 'executar')).rejects.toMatchObject({ code: 'CONFIRMATION_REQUIRED' });
+    await expect(b.shellWrite(s.id, 'rm -rf /sdcard/x', 'EXECUTAR')).resolves.toBeUndefined();
+  });
+});

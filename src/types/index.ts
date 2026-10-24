@@ -270,6 +270,95 @@ export interface ScreenshotResult {
 }
 
 /** Normalized backend error (AppError from Rust). */
+export type ShellRisk = 'read' | 'modify' | 'destructive';
+
+/** Heuristic verdict for a shell line (backend: `security::shell_risk`). */
+export interface ShellAssessment {
+  risk: ShellRisk;
+  reasons: string[];
+}
+
+/** Word that must be typed to run a destructive shell line. */
+export const SHELL_CONFIRMATION_WORD = 'EXECUTAR';
+
+// ---- Scanner Center (backend: src-tauri/src/scanner) ----------------------
+export type ScanTarget = 'environment' | 'device';
+export type Severity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+export type Confidence = 'low' | 'medium' | 'high';
+export type CheckStatus = 'passed' | 'found' | 'skipped' | 'error';
+
+export const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low', 'info'];
+
+export interface Evidence {
+  source: string;
+  key: string;
+  value: string;
+}
+
+export interface Finding {
+  id: string;
+  ruleId: string;
+  title: string;
+  severity: Severity;
+  confidence: Confidence;
+  target: ScanTarget;
+  subject: string;
+  category: string;
+  detection: string;
+  evidence: Evidence[];
+  impact: string;
+  recommendation: string;
+  action: string | null;
+  reversible: boolean | null;
+  status: 'open' | 'resolved' | 'ignored';
+}
+
+export interface ScanCheck {
+  id: string;
+  title: string;
+  status: CheckStatus;
+  detail: string | null;
+}
+
+export interface ScanSummaryCounts {
+  total: number;
+  bySeverity: Partial<Record<Severity, number>>;
+  checksEvaluated: number;
+  checksNotEvaluated: number;
+}
+
+export interface ScanReport {
+  schemaVersion: number;
+  scanId: string;
+  target: ScanTarget;
+  subject: string | null;
+  startedAt: number;
+  finishedAt: number;
+  lang: string;
+  checks: ScanCheck[];
+  findings: Finding[];
+  summary: ScanSummaryCounts;
+  limitations: string[];
+}
+
+export interface ScanSummary {
+  scanId: string;
+  target: ScanTarget;
+  subject: string | null;
+  startedAt: number;
+  lang: string;
+  total: number;
+  bySeverity: Partial<Record<Severity, number>>;
+  checksNotEvaluated: number;
+}
+
+export interface ScanDiff {
+  new: Finding[];
+  resolved: Finding[];
+  changed: { id: string; title: string; from: Severity; to: Severity }[];
+  unchanged: number;
+}
+
 export interface AppError {
   code: string;
   details: string;

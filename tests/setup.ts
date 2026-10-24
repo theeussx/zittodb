@@ -17,6 +17,10 @@ if (typeof window !== 'undefined') {
       }),
     });
   }
+  // jsdom does not implement Element.scrollTo (real WebViews do).
+  if (!Element.prototype.scrollTo) {
+    Element.prototype.scrollTo = function scrollTo() {} as typeof Element.prototype.scrollTo;
+  }
   if (!navigator.clipboard) {
     Object.defineProperty(navigator, 'clipboard', {
       writable: true,

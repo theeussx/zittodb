@@ -13,6 +13,7 @@ pub mod media;
 pub mod operations;
 pub mod packages;
 pub mod reports;
+pub mod scanner;
 pub mod scrcpy;
 pub mod settings;
 pub mod shell;
@@ -48,6 +49,7 @@ pub struct AppState {
     pub transfers: Arc<crate::processes::TransferManager>,
     pub audit: Arc<crate::storage::audit::AuditLog>,
     pub history: Arc<crate::storage::history::DeviceHistory>,
+    pub scans: Arc<crate::storage::scans::ScanStore>,
     pub coordinator: Arc<device_helpers::Coordinator>,
 }
 
@@ -105,6 +107,7 @@ fn timeout_for(op: &DeviceOperation) -> Duration {
     match op {
         O::GetProps
         | O::GetKernel
+        | O::GetSelinuxMode
         | O::GetMeminfo
         | O::GetBattery
         | O::GetNetwork
@@ -239,6 +242,49 @@ pub async fn execute_op(
     result
 }
 
+/// Appends an audit entry for operations that do not go through
+/// [`execute_op`] (transfers, APK extraction). `command` must be built from
+/// validated values only; file contents are never logged.
+pub fn audit_event(
+    audit: &crate::storage::audit::AuditLog,
+    device: Option<String>,
+    action: &str,
+    command: String,
+    result: String,
+) {
+    audit.append(AuditEntry {
+        ts: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0),
+        device,
+        action: action.to_string(),
+        command,
+        result,
+        undo: None,
+    });
+}
+
+/// Maps a final transfer status to the audit `result` string
+/// (`ok` | `error:<CODE>`). Returns `None` while the transfer is running.
+pub fn transfer_audit_result(status: &str, message: &str) -> Option<String> {
+    match status {
+        "running" => None,
+        "done" => Some("ok".to_string()),
+        "cancelled" => Some(format!("error:{}", ErrorCode::Cancelled.as_str())),
+        _ if message == "timeout" => Some(format!("error:{}", ErrorCode::Timeout.as_str())),
+        _ => Some(format!("error:{}", ErrorCode::ProcessFailed.as_str())),
+    }
+}
+
+/// Last path component, for audit text (avoids recording local directory layout).
+pub fn audit_basename(path: &str) -> String {
+    path.rsplit('/')
+        .find(|s| !s.is_empty())
+        .unwrap_or("?")
+        .to_string()
+}
+
 /// Reversal reference for reversible operations (spec §23).
 pub fn undo_ref_for(op: &DeviceOperation) -> Option<UndoRef> {
     use DeviceOperation as O;
@@ -300,4 +346,34 @@ where
 {
     h.await
         .map_err(|e| AppError::new(ErrorCode::Unexpected, format!("task: {e}")))?
+}
+
+#[cfg(test)]
+mod audit_helper_tests {
+    use super::*;
+
+    #[test]
+    fn transfer_results_map_to_audit_strings() {
+        assert_eq!(transfer_audit_result("running", ""), None);
+        assert_eq!(transfer_audit_result("done", "x").as_deref(), Some("ok"));
+        assert_eq!(
+            transfer_audit_result("cancelled", "cancelled").as_deref(),
+            Some("error:CANCELLED")
+        );
+        assert_eq!(
+            transfer_audit_result("error", "timeout").as_deref(),
+            Some("error:TIMEOUT")
+        );
+        assert_eq!(
+            transfer_audit_result("error", "adb: failed").as_deref(),
+            Some("error:PROCESS_FAILED")
+        );
+    }
+
+    #[test]
+    fn audit_basename_hides_directories() {
+        assert_eq!(audit_basename("/home/u/secret dir/app.apk"), "app.apk");
+        assert_eq!(audit_basename("/sdcard/"), "sdcard");
+        assert_eq!(audit_basename(""), "?");
+    }
 }

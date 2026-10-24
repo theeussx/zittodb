@@ -177,21 +177,21 @@ impl TransferManager {
             v
         };
 
+        // `done` is only set by cancel/timeout. The outcome of a finished
+        // transfer is decided by adb's EXIT CODE, never by matching text:
+        // modern adb prints "N files pushed, 0 skipped. ... (B bytes in Ts)",
+        // and a file name may itself contain the word "error".
         let done = Arc::new(AtomicBool::new(false));
         let last_line = Arc::new(Mutex::new(String::new()));
-        let line_done = Arc::clone(&done);
         let line_last = Arc::clone(&last_line);
         let on_line = move |line: String| {
-            // adb reports the outcome in its final lines:
-            //   "12345 bytes pushed in 1.234s (9.98 MB/s)"
-            //   "12345 bytes pulled in 1.234s (9.98 MB/s)"
-            //   "adb: error: remote object 'x' not found"
-            if line.contains("bytes pushed")
-                || line.contains("bytes pulled")
-                || line.contains("error")
+            // adb redraws progress with '\r'; keep the last non-empty segment.
+            if let Some(seg) = line
+                .split(['\r', '\n'])
+                .map(str::trim)
+                .rfind(|s| !s.is_empty())
             {
-                *line_last.lock().unwrap() = line.trim().to_string();
-                line_done.store(true, Ordering::SeqCst);
+                *line_last.lock().unwrap() = seg.to_string();
             }
         };
 
@@ -223,34 +223,43 @@ impl TransferManager {
             let deadline = Instant::now() + TRANSFER_TIMEOUT;
             loop {
                 if watcher.done.load(Ordering::SeqCst) {
+                    // Set only by `cancel` (and the timeout branch below).
                     let msg = watcher.last_line.lock().unwrap().clone();
-                    let status = if msg.contains("error") {
-                        "error"
-                    } else if msg == "cancelled" {
+                    let status = if msg == "cancelled" {
                         "cancelled"
                     } else {
-                        "done"
+                        "error"
                     };
                     sink(TransferEvent {
                         id: watcher_id.clone(),
                         status: status.to_string(),
-                        done_bytes: if watcher.kind == "pull" {
-                            local_current_bytes(&watcher.local)
-                        } else {
-                            watcher.total.unwrap_or(0)
-                        },
+                        done_bytes: local_current_bytes(&watcher.local),
                         total: watcher.total,
                         message: msg,
                     });
                     break;
                 }
-                if !watcher.handle.is_alive() {
+                if let Some(code) = watcher.handle.exit_code() {
+                    // Give the pump threads a moment to deliver the final line.
+                    std::thread::sleep(Duration::from_millis(150));
+                    let msg = watcher.last_line.lock().unwrap().clone();
+                    let ok = code == 0;
                     sink(TransferEvent {
                         id: watcher_id.clone(),
-                        status: "error".into(),
-                        done_bytes: local_current_bytes(&watcher.local),
+                        status: if ok { "done" } else { "error" }.to_string(),
+                        done_bytes: if watcher.kind == "pull" {
+                            local_current_bytes(&watcher.local)
+                        } else if ok {
+                            watcher.total.unwrap_or(0)
+                        } else {
+                            0
+                        },
                         total: watcher.total,
-                        message: "adb process ended without a result line".into(),
+                        message: if ok || !msg.is_empty() {
+                            msg
+                        } else {
+                            format!("adb exited with code {code}")
+                        },
                     });
                     break;
                 }
@@ -413,7 +422,7 @@ case "$args" in
     local="$1"; remote="$2"
     mkdir -p "$(dirname "$remote")"
     cp "$local" "$remote"
-    echo "1024 bytes pushed in 0.100s (10.00 MB/s)"
+    echo "payload.bin: 1 file pushed, 0 skipped. 10.0 MB/s (1024 bytes in 0.100s)"
     ;;
   *" pull "*)
     set -- $args
@@ -421,7 +430,7 @@ case "$args" in
     remote="$1"; local="$2"
     mkdir -p "$(dirname "$local")"
     cp "$remote" "$local"
-    echo "1024 bytes pulled in 0.100s (10.00 MB/s)"
+    echo "payload.bin: 1 file pulled, 0 skipped. 10.0 MB/s (1024 bytes in 0.100s)"
     ;;
   *)
     echo "fake adb: unknown" >&2
@@ -529,5 +538,76 @@ exit 0
         std::thread::sleep(Duration::from_millis(200));
         m.stop_all();
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// Runs one push against a fake adb whose body is `script_body` and returns
+    /// the final event.
+    fn push_with_script(tag: &str, script_body: &str) -> TransferEvent {
+        let dir = std::env::temp_dir().join(format!("zittodb-tx-{tag}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let fake = dir.join("fake-adb");
+        std::fs::write(&fake, format!("#!/bin/sh\n{script_body}\n")).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&fake, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let payload = dir.join("payload.bin");
+        std::fs::write(&payload, [0u8; 16]).unwrap();
+        let m = TransferManager::new();
+        let (tx, rx) = std::sync::mpsc::channel::<TransferEvent>();
+        m.start_push(
+            fake.to_str().unwrap(),
+            "TESTSERIAL",
+            &payload,
+            "/sdcard/payload.bin",
+            Box::new(move |e| {
+                let _ = tx.send(e);
+            }),
+        )
+        .unwrap();
+        let ev = loop {
+            let e = rx
+                .recv_timeout(Duration::from_secs(10))
+                .expect("final event");
+            if e.status != "running" {
+                break e;
+            }
+        };
+        std::fs::remove_dir_all(&dir).ok();
+        ev
+    }
+
+    #[test]
+    fn modern_adb_success_line_is_done() {
+        let ev = push_with_script(
+            "ok",
+            "echo 'payload.bin: 1 file pushed, 0 skipped. 4.0 MB/s (16 bytes in 0.000s)'",
+        );
+        assert_eq!(ev.status, "done", "{ev:?}");
+        assert!(ev.message.contains("1 file pushed"), "{ev:?}");
+    }
+
+    #[test]
+    fn file_name_containing_error_is_not_a_failure() {
+        let ev = push_with_script(
+            "errname",
+            "echo '/sdcard/error.log: 1 file pushed, 0 skipped. 4.0 MB/s (16 bytes in 0.000s)'",
+        );
+        assert_eq!(ev.status, "done", "{ev:?}");
+    }
+
+    #[test]
+    fn nonzero_exit_is_an_error_even_without_the_word_error() {
+        let ev = push_with_script("fail", "echo 'adb: failed to copy x' >&2; exit 1");
+        assert_eq!(ev.status, "error", "{ev:?}");
+        assert!(ev.message.contains("failed to copy"), "{ev:?}");
+    }
+
+    #[test]
+    fn silent_nonzero_exit_reports_the_exit_code() {
+        let ev = push_with_script("silent", "exit 3");
+        assert_eq!(ev.status, "error", "{ev:?}");
+        assert!(ev.message.contains("code 3"), "{ev:?}");
     }
 }

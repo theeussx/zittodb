@@ -9,6 +9,7 @@ import { UpdateBanner } from '../components/UpdateBanner';
 import { DeviceList } from '../features/devices/DeviceList';
 import { DeviceDashboard } from '../features/devices/DeviceDashboard';
 import { CommandBuilder } from '../features/builder/CommandBuilder';
+import { ScannerView } from '../features/scanner/ScannerView';
 import { FastbootView } from '../features/fastboot/FastbootView';
 import { HistoryView } from '../features/history/HistoryView';
 import { SettingsView } from '../features/settings/SettingsView';
@@ -34,6 +35,7 @@ function Sidebar() {
 
   const navItems: { id: Nav; label: string; icon: string; kbd?: string }[] = [
     { id: 'devices', label: t('nav.devices'), icon: '▣', kbd: SHORTCUTS.devices },
+    { id: 'scanner', label: t('nav.scanner'), icon: '🔍' },
     { id: 'builder', label: t('nav.builder'), icon: '⌨' },
     { id: 'fastboot', label: t('nav.fastboot'), icon: '⚡' },
     { id: 'history', label: t('nav.history'), icon: '🕘' },
@@ -135,6 +137,7 @@ export function AppShell({ update, onDismissUpdate }: { update?: UpdateInfo | nu
         <div className="content">
           {nav === 'devices' &&
             (selected ? <DeviceDashboard /> : <DeviceList />)}
+          {nav === 'scanner' && <ScannerView />}
           {nav === 'builder' && <CommandBuilder />}
           {nav === 'fastboot' && <FastbootView />}
           {nav === 'history' && <HistoryView />}

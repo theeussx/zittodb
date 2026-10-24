@@ -11,9 +11,13 @@ use tauri::State;
 
 use serde::Serialize;
 
-use crate::error::AppError;
+use crate::error::{AppError, ErrorCode};
+use crate::processes::validate_shell_line;
+use crate::security::shell_risk::{
+    classify_shell_line, ShellAssessment, ShellRisk, SHELL_CONFIRMATION_WORD,
+};
 
-use super::AppState;
+use super::{audit_event, AppState};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -52,11 +56,65 @@ pub fn shell_open(
     })
 }
 
-/// Writes user input to the session stdin.
+/// Classifies a line WITHOUT running anything, so the UI can show the risk
+/// before the user presses Enter. Heuristic: see `security::shell_risk`.
 #[tauri::command]
-pub fn shell_write(state: State<'_, AppState>, id: String, data: String) -> Result<(), AppError> {
+pub fn shell_classify(line: String) -> ShellAssessment {
+    classify_shell_line(&line)
+}
+
+/// Sends one command line to the session stdin. The line must not contain a
+/// newline: the backend appends the terminator itself.
+///
+/// The risk gate lives HERE, not in the UI: a `destructive` line is refused
+/// with `CONFIRMATION_REQUIRED` unless `confirmation` is exactly `EXECUTAR`.
+/// Modifying and destructive lines are audited WITHOUT the command text
+/// (shell input may contain secrets).
+#[tauri::command]
+pub fn shell_write(
+    state: State<'_, AppState>,
+    id: String,
+    data: String,
+    confirmation: Option<String>,
+) -> Result<(), AppError> {
     let st = state.inner().clone();
-    st.shell_mgr.write(&id, &data)
+    write_checked(&st, &id, &data, confirmation.as_deref())
+}
+
+pub fn write_checked(
+    st: &AppState,
+    id: &str,
+    data: &str,
+    confirmation: Option<&str>,
+) -> Result<(), AppError> {
+    validate_shell_line(data)?;
+    let assessment = classify_shell_line(data);
+    if assessment.risk == ShellRisk::Destructive && confirmation != Some(SHELL_CONFIRMATION_WORD) {
+        return Err(AppError::new(
+            ErrorCode::ConfirmationRequired,
+            format!("type {SHELL_CONFIRMATION_WORD} to confirm"),
+        ));
+    }
+    st.shell_mgr.write_line(id, data)?;
+    if assessment.risk != ShellRisk::Read {
+        let serial = st.shell_mgr.serial_of(id);
+        let risk = match assessment.risk {
+            ShellRisk::Modify => "modify",
+            _ => "destructive",
+        };
+        audit_event(
+            &st.audit,
+            serial.clone(),
+            "shell_command",
+            format!(
+                "adb -s {} shell [{risk}: {}]",
+                serial.as_deref().unwrap_or("?"),
+                assessment.reasons.join(",")
+            ),
+            "ok".to_string(),
+        );
+    }
+    Ok(())
 }
 
 /// Closes a session (kills the adb shell child).

@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { getBridge, asAppError } from '../../services/bridge';
 import { useApp } from '../../stores/app';
 import { Badge, Button, Spinner } from '../../components/ui';
-import { ErrorDialog } from '../../components/ConfirmDialog';
-import type { AppError } from '../../types';
+import { DestructiveConfirmDialog, ErrorDialog } from '../../components/ConfirmDialog';
+import { SHELL_CONFIRMATION_WORD } from '../../types';
+import type { AppError, ShellAssessment } from '../../types';
 
 interface Line {
   text: string;
@@ -19,6 +20,8 @@ export function ShellView({ serial }: { serial: string }) {
   const [input, setInput] = useState('');
   const [error, setError] = useState<AppError | null>(null);
   const [busy, setBusy] = useState(true);
+  const [assessment, setAssessment] = useState<ShellAssessment | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const sessionRef = useRef<string | null>(null);
   sessionRef.current = session;
@@ -69,16 +72,55 @@ export function ShellView({ serial }: { serial: string }) {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
   }, [lines]);
 
-  const send = async () => {
-    const cmd = input.trim();
-    if (!cmd || !session) return;
+  // Risk badge for what is being typed (debounced). The backend enforces the
+  // gate regardless; this only informs the user before pressing Enter.
+  useEffect(() => {
+    const line = input.trim();
+    if (!line) {
+      setAssessment(null);
+      return;
+    }
+    let stale = false;
+    const timer = setTimeout(() => {
+      getBridge()
+        .shellClassify(line)
+        .then((a) => { if (!stale) setAssessment(a); })
+        // e.g. the browser dev server has no classifier: show no badge.
+        .catch(() => { if (!stale) setAssessment(null); });
+    }, 150);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [input]);
+
+  const run = async (cmd: string, confirmation?: string) => {
+    if (!session) return;
     setInput('');
+    setAssessment(null);
     setLines((prev) => [...prev, { text: `$ ${cmd}`, kind: 'prompt' }]);
     try {
-      await getBridge().shellWrite(session, cmd);
+      await getBridge().shellWrite(session, cmd, confirmation);
     } catch (e) {
       setError(asAppError(e));
     }
+  };
+
+  const send = async () => {
+    const cmd = input.trim();
+    if (!cmd || !session) return;
+    let verdict = assessment;
+    try {
+      // Re-classify right before sending: never trust a stale badge.
+      verdict = await getBridge().shellClassify(cmd);
+    } catch {
+      verdict = null;
+    }
+    if (verdict?.risk === 'destructive') {
+      setPending(cmd);
+      return;
+    }
+    await run(cmd);
   };
 
   const clearView = () => setLines([]);
@@ -111,6 +153,13 @@ export function ShellView({ serial }: { serial: string }) {
           <span className="mono" style={{ color: 'var(--accent)' }}>
             $
           </span>
+          {assessment && (
+            <span title={t('shell.risk.hint')}>
+              <Badge tone={assessment.risk === 'read' ? 'ok' : assessment.risk === 'modify' ? 'warn' : 'danger'}>
+                {t(`shell.risk.${assessment.risk}`)}
+              </Badge>
+            </span>
+          )}
           <input
             className="term-input"
             value={input}
@@ -132,6 +181,21 @@ export function ShellView({ serial }: { serial: string }) {
         <p className="dim small" style={{ margin: '8px 0 0' }}>
           {t('shell.security')}
         </p>
+        {pending && (
+          <DestructiveConfirmDialog
+            cfg={{
+              title: t('shell.confirm.title'),
+              body: t('shell.confirm.body', { cmd: pending }),
+              word: SHELL_CONFIRMATION_WORD,
+              onCancel: () => setPending(null),
+              onConfirm: async () => {
+                const cmd = pending;
+                setPending(null);
+                await run(cmd, SHELL_CONFIRMATION_WORD);
+              },
+            }}
+          />
+        )}
         {error && <ErrorDialog error={error} onClose={() => setError(null)} />}
       </div>
     </div>

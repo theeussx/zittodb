@@ -1,23 +1,29 @@
 ## [1.0.0] - 2026-10-09
 
-### Adicionado
-
-- Relatório diagnóstico P0 com schemaVersion estável, coleta parcial por seção, mascaramento conservador de serial/rede e preview na tela de Diagnóstico.
-- Exportação backend em JSON e Markdown no diretório seguro de downloads, sem sobrescrita silenciosa e com nomes incrementais.
-
 ### Corrigido
 
 - A gravação do scrcpy e o armazenamento dos arquivos de mídia.
 - A seleção explícita do dispositivo e a consulta de variáveis no Fastboot.
 - A proteção de pacotes críticos e a desinstalação no Debloat.
 
-### Ainda não verificado
+## [1.1.0] - 2026-10-24
 
-- Hardware físico, bundles AppImage/.deb, instalação limpa e assinatura/updater permanecem sem verificação nesta sandbox.
+### Adicionado
 
-## [Unreleased] — próxima versão
+- Relatório diagnóstico P0 com schemaVersion estável, coleta parcial por seção, mascaramento conservador de serial/rede e preview na tela de Diagnóstico.
+- Exportação backend em JSON e Markdown no diretório seguro de downloads, sem sobrescrita silenciosa e com nomes incrementais.
+- Scanner Center com verificações somente leitura do ambiente (ADB, Fastboot e scrcpy) ou de um dispositivo Android selecionado, evidências por achado e limitações explícitas.
+- Histórico local de varreduras, comparação entre relatórios, filtros por severidade/categoria e exportação em JSON ou Markdown.
+- Classificação de risco no Shell interativo, com indicação de comandos de leitura, alteração e destrutivos.
 
-- Inspetor de APK e fila de instalação ainda não foram iniciados; permanecem condicionados à revisão do relatório diagnóstico e à validação de segurança.
+### Segurança
+
+- Comandos destrutivos no Shell exigem a confirmação digitada `EXECUTAR`; a validação também é aplicada no backend, que limita a entrada a uma linha.
+- Exclusão e renomeação no dispositivo bloqueiam caminhos críticos, mesmo quando há confirmação.
+
+### Melhorado
+
+- Auditoria de transferências de arquivos e extração de APKs registra resultado e nome do arquivo, sem incluir o caminho local completo.
 
 ## [0.1.6] - 2026-10-06
 

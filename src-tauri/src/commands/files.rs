@@ -10,7 +10,10 @@ use crate::adb::operations::DeviceOperation;
 use crate::error::{AppError, ErrorCode};
 use crate::processes::{remote_file_size, TransferEvent};
 
-use super::{blocking, execute_op, join, AppState, OpResult};
+use super::{
+    audit_basename, audit_event, blocking, execute_op, join, transfer_audit_result, AppState,
+    OpResult,
+};
 
 /// Lists a device directory (validated absolute path).
 #[tauri::command]
@@ -112,7 +115,19 @@ pub fn file_push(
     };
 
     let emitter = app.clone();
+    let audit = st.audit.clone();
+    let audit_serial = serial.clone();
+    let audit_cmd = format!("adb -s {serial} push {} {remote}", audit_basename(&local));
     let on_event = move |e: TransferEvent| {
+        if let Some(result) = transfer_audit_result(&e.status, &e.message) {
+            audit_event(
+                &audit,
+                Some(audit_serial.clone()),
+                "push",
+                audit_cmd.clone(),
+                result,
+            );
+        }
         let _ = emitter.emit("file-progress", e);
     };
 
@@ -167,7 +182,19 @@ pub async fn file_pull(
     };
 
     let emitter = app.clone();
+    let audit = st.audit.clone();
+    let audit_serial = serial.clone();
+    let audit_cmd = format!("adb -s {serial} pull {remote} {}", audit_basename(name));
     let on_event = move |e: TransferEvent| {
+        if let Some(result) = transfer_audit_result(&e.status, &e.message) {
+            audit_event(
+                &audit,
+                Some(audit_serial.clone()),
+                "pull",
+                audit_cmd.clone(),
+                result,
+            );
+        }
         let _ = emitter.emit("file-progress", e);
     };
 

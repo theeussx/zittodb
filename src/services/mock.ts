@@ -30,10 +30,17 @@ import type {
   ScrcpyOptions,
   ScrcpyStatus,
   ScreenshotResult,
+  ScanDiff,
+  ScanReport,
+  ScanSummary,
+  ScanTarget,
   Settings,
+  ShellAssessment,
+  Finding,
   ToolName,
   ToolStatus,
 } from '../types';
+import { SHELL_CONFIRMATION_WORD } from '../types';
 import type { Bridge, Unsubscribe } from './bridge';
 import { APP } from '../config/app';
 
@@ -574,7 +581,132 @@ export class MockBridge implements Bridge {
     return { id, serial };
   }
 
-  async shellWrite(id: string, data: string): Promise<void> {
+  // ---- Scanner Center (demo) -----------------------------------------------
+  // Sample data only: nothing is read from a device. The limitations say so.
+  private scanStore = new Map<string, ScanReport>();
+  private scanSeq = 0;
+
+  async scanRun(target: ScanTarget, serial: string | null, lang: string): Promise<ScanReport> {
+    const pt = lang.toLowerCase().startsWith('pt');
+    const tx = (en: string, ptText: string) => (pt ? ptText : en);
+    const mk = (ruleId: string, severity: Finding['severity'], title: string, key: string, value: string): Finding => ({
+      id: `ZF-demo${ruleId.length.toString().padStart(8, '0')}${ruleId.charCodeAt(ruleId.length - 1) % 10}`.slice(0, 15),
+      ruleId,
+      title,
+      severity,
+      confidence: 'high',
+      target,
+      subject: serial ?? 'adb',
+      category: 'demo',
+      detection: tx('Demo data', 'Dados de demonstração'),
+      evidence: [{ source: 'demo', key, value }],
+      impact: tx('Sample impact text.', 'Texto de impacto de exemplo.'),
+      recommendation: tx('Sample recommendation.', 'Recomendação de exemplo.'),
+      action: null,
+      reversible: true,
+      status: 'open',
+    });
+    const findings: Finding[] =
+      target === 'device'
+        ? [
+            mk('DEV-PATCH-OLD', 'medium', tx('Android security patch level is old', 'Nível do patch de segurança do Android está antigo'), 'ro.build.version.security_patch', '2024-01-05'),
+            mk('DEV-ADB-TCP', 'medium', tx('adbd is listening on a TCP port', 'adbd está escutando em uma porta TCP'), 'service.adb.tcp.port', '5555'),
+          ]
+        : [mk('ENV-SCRCPY-MISSING', 'info', tx('scrcpy was not found', 'scrcpy não foi encontrado'), 'scrcpy.found', 'false')];
+    const checks: ScanReport['checks'] = [
+      { id: 'demo.a', title: tx('Demo check with a finding', 'Verificação de demonstração com achado'), status: 'found', detail: null },
+      { id: 'demo.b', title: tx('Demo check without finding', 'Verificação de demonstração sem achado'), status: 'passed', detail: null },
+      { id: 'demo.c', title: tx('Demo check not evaluated', 'Verificação de demonstração não avaliada'), status: 'skipped', detail: tx('property not exposed', 'propriedade não exposta') },
+    ];
+    const bySeverity: ScanReport['summary']['bySeverity'] = {};
+    for (const f of findings) bySeverity[f.severity] = (bySeverity[f.severity] ?? 0) + 1;
+    const startedAt = Math.floor(Date.now() / 1000);
+    const report: ScanReport = {
+      schemaVersion: 1,
+      scanId: `scan-${startedAt}-${(this.scanSeq++).toString(16).padStart(4, '0')}`,
+      target,
+      subject: target === 'device' ? serial : null,
+      startedAt,
+      finishedAt: startedAt,
+      lang,
+      checks,
+      findings,
+      summary: { total: findings.length, bySeverity, checksEvaluated: 2, checksNotEvaluated: 1 },
+      limitations: [tx('DEMO MODE: sample data, nothing was read from a device or from this computer.', 'MODO DEMONSTRAÇÃO: dados de exemplo, nada foi lido de um dispositivo nem deste computador.')],
+    };
+    this.scanStore.set(report.scanId, report);
+    return report;
+  }
+
+  async scanHistory(): Promise<ScanSummary[]> {
+    return [...this.scanStore.values()]
+      .sort((a, b) => b.startedAt - a.startedAt || b.scanId.localeCompare(a.scanId))
+      .map((r) => ({
+        scanId: r.scanId,
+        target: r.target,
+        subject: r.subject,
+        startedAt: r.startedAt,
+        lang: r.lang,
+        total: r.summary.total,
+        bySeverity: r.summary.bySeverity,
+        checksNotEvaluated: r.summary.checksNotEvaluated,
+      }));
+  }
+
+  async scanGet(id: string): Promise<ScanReport> {
+    const r = this.scanStore.get(id);
+    if (!r) throw Object.assign(new Error('unknown'), { code: 'FILE_NOT_FOUND', details: 'unknown scan' });
+    return r;
+  }
+
+  async scanDelete(id: string): Promise<void> {
+    this.scanStore.delete(id);
+  }
+
+  async scanExport(id: string, format: 'json' | 'markdown'): Promise<string> {
+    const r = await this.scanGet(id);
+    if (format === 'json') return JSON.stringify(r, null, 2);
+    return `# ZittoDB scan (demo)\n\n${r.findings.map((f) => `- [${f.severity}] ${f.title}`).join('\n')}\n`;
+  }
+
+  async scanCompare(before: string, after: string): Promise<ScanDiff> {
+    const a = await this.scanGet(before);
+    const b = await this.scanGet(after);
+    if (a.target !== b.target || a.subject !== b.subject) {
+      throw Object.assign(new Error('mismatch'), { code: 'INVALID_ARGUMENT', details: 'only scans of the same target and subject can be compared' });
+    }
+    const notIn = (xs: Finding[], ys: Finding[]) => xs.filter((x) => !ys.some((y) => y.id === x.id));
+    return {
+      new: notIn(b.findings, a.findings),
+      resolved: notIn(a.findings, b.findings),
+      changed: [],
+      unchanged: b.findings.filter((f) => a.findings.some((g) => g.id === f.id)).length,
+    };
+  }
+
+  /**
+   * Demo-only approximation of the Rust classifier (`security::shell_risk`).
+   * The real rules live in the backend; this exists so demo mode and UI tests
+   * exercise the same confirmation flow.
+   */
+  async shellClassify(line: string): Promise<ShellAssessment> {
+    const l = line.trim();
+    if (/^(rm|reboot|dd|su|sh|eval)\b|\$\(|`/.test(l) || /\bpm (uninstall|clear)\b/.test(l)) {
+      return { risk: 'destructive', reasons: ['demo'] };
+    }
+    if (/^(settings put|pm |am |input|setprop|mv|cp|chmod)\b/.test(l) || l.includes('>')) {
+      return { risk: 'modify', reasons: ['demo'] };
+    }
+    return { risk: 'read', reasons: [] };
+  }
+
+  async shellWrite(id: string, data: string, confirmation?: string): Promise<void> {
+    if ((await this.shellClassify(data)).risk === 'destructive' && confirmation !== SHELL_CONFIRMATION_WORD) {
+      throw Object.assign(new Error('confirm'), {
+        code: 'CONFIRMATION_REQUIRED',
+        details: `type ${SHELL_CONFIRMATION_WORD} to confirm`,
+      });
+    }
     const lines = data.split('\n').filter(Boolean);
     for (const raw of lines) {
       const cmd = raw.trim();

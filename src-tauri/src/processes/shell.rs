@@ -16,6 +16,24 @@ use crate::security::validate_serial;
 
 use super::{spawn_streamed, StreamHandle};
 
+/// Maximum size of one command line sent to a shell session.
+pub const MAX_SHELL_LINE: usize = 10_000;
+
+/// A shell line must be non-empty text without line breaks or control bytes
+/// (tabs are allowed).
+pub fn validate_shell_line(line: &str) -> Result<(), AppError> {
+    let bad = line.trim().is_empty()
+        || line.len() > MAX_SHELL_LINE
+        || line.chars().any(|c| c != '\t' && (c.is_control()));
+    if bad {
+        return Err(AppError::new(
+            ErrorCode::InvalidArgument,
+            "shell input must be a single non-empty line without control characters",
+        ));
+    }
+    Ok(())
+}
+
 pub struct ShellSession {
     pub id: String,
     pub serial: String,
@@ -82,6 +100,20 @@ impl ShellManager {
             ));
         };
         handle.write(data)
+    }
+
+    /// Sends ONE command line to the session. The backend owns the line
+    /// terminator (the frontend never sends `\n`), which keeps the desktop
+    /// backend consistent with the browser dev server and prevents a single
+    /// call from smuggling several commands through embedded newlines.
+    pub fn write_line(&self, id: &str, line: &str) -> Result<(), AppError> {
+        validate_shell_line(line)?;
+        self.write(id, &format!("{line}\n"))
+    }
+
+    /// Serial a session was opened for.
+    pub fn serial_of(&self, id: &str) -> Option<String> {
+        self.serials.lock().unwrap().get(id).cloned()
     }
 
     pub fn close(&self, id: &str) -> Result<(), AppError> {
@@ -162,10 +194,25 @@ mod tests {
     fn closes_sessions() {
         let m = ShellManager::new();
         let on_line = |_l: String| {};
-        // /bin/cat with stdin as a stand-in for `adb shell` (same shape:
-        // writes go to stdin, output comes on stdout).
+        // A stdin-reading script stands in for `adb shell` (same shape: writes
+        // go to stdin). `/bin/cat` cannot be used directly: adb's argv
+        // (`-s SERIAL shell`) makes cat treat them as file names and exit.
+        let dir = std::env::temp_dir().join(format!("zittodb-shell-sink-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let sink = dir.join("fake-adb");
+        std::fs::write(&sink, "#!/bin/sh\nexec cat > /dev/null\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&sink, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
         let h = m
-            .open("sh1", "/bin/cat", "192.168.1.50:5555", Arc::new(on_line))
+            .open(
+                "sh1",
+                sink.to_str().unwrap(),
+                "192.168.1.50:5555",
+                Arc::new(on_line),
+            )
             .unwrap();
         m.write("sh1", "hi\n").unwrap();
         assert_eq!(m.list().len(), 1);
@@ -174,5 +221,54 @@ mod tests {
         let err = m.write("sh1", "x").expect_err("gone");
         assert_eq!(err.code, ErrorCode::FileNotFound);
         drop(h);
+    }
+
+    #[test]
+    fn write_line_appends_exactly_one_newline() {
+        let dir = std::env::temp_dir().join(format!("zittodb-shell-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let out = dir.join("out.txt");
+        let _ = std::fs::remove_file(&out);
+        let m = ShellManager::new();
+        let on_line = |_l: String| {};
+        // `tee` stands in for `adb shell`: it only emits what it receives.
+        let tee = dir.join("fake-adb");
+        std::fs::write(&tee, format!("#!/bin/sh\nexec cat > '{}'\n", out.display())).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&tee, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        m.open("sh1", tee.to_str().unwrap(), "FAKE1", Arc::new(on_line))
+            .unwrap();
+        m.write_line("sh1", "getprop ro.product.model").unwrap();
+        // Wait until the child has consumed the input BEFORE closing (close kills it).
+        for _ in 0..100 {
+            if std::fs::metadata(&out)
+                .map(|m| m.len() > 0)
+                .unwrap_or(false)
+            {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        m.close("sh1").unwrap();
+        assert_eq!(
+            std::fs::read_to_string(&out).unwrap(),
+            "getprop ro.product.model\n"
+        );
+    }
+
+    #[test]
+    fn write_line_rejects_multiline_and_control_input() {
+        for bad in ["", "   ", "a\nb", "a\rb", "a\0b", "ls\x1b[2J"] {
+            assert_eq!(
+                validate_shell_line(bad).unwrap_err().code,
+                ErrorCode::InvalidArgument,
+                "{bad:?}"
+            );
+        }
+        assert!(validate_shell_line(&"x".repeat(MAX_SHELL_LINE + 1)).is_err());
+        assert!(validate_shell_line("echo\thello").is_ok());
     }
 }

@@ -14,8 +14,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{AppError, ErrorCode};
 use crate::security::{
-    quote_shell, validate_device_path, validate_host, validate_local_path, validate_package,
-    validate_serial,
+    quote_shell, validate_device_path, validate_host, validate_local_path,
+    validate_mutable_device_path, validate_package, validate_serial,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,6 +44,8 @@ pub enum DeviceOperation {
     // ---- read-only -------------------------------------------------------
     GetProps,
     GetKernel,
+    /// `getenforce`: SELinux mode (Enforcing / Permissive).
+    GetSelinuxMode,
     GetMeminfo,
     GetDiskUsage {
         path: String,
@@ -139,6 +141,7 @@ impl DeviceOperation {
         match self {
             O::GetProps => "get_props",
             O::GetKernel => "get_kernel",
+            O::GetSelinuxMode => "get_selinux_mode",
             O::GetMeminfo => "get_meminfo",
             O::GetDiskUsage { .. } => "get_disk_usage",
             O::GetBattery => "get_battery",
@@ -204,12 +207,13 @@ impl DeviceOperation {
     pub fn validate(&self) -> Result<(), AppError> {
         use DeviceOperation as O;
         match self {
-            O::GetDiskUsage { path }
-            | O::ListDir { path }
-            | O::Mkdir { path }
-            | O::Delete { path } => validate_device_path(path),
+            O::GetDiskUsage { path } | O::ListDir { path } | O::Mkdir { path } => {
+                validate_device_path(path)
+            }
+            // `rm -rf` and `mv` must never target a protected root.
+            O::Delete { path } => validate_mutable_device_path(path),
             O::Rename { from, to } => {
-                validate_device_path(from)?;
+                validate_mutable_device_path(from)?;
                 validate_device_path(to)
             }
             O::Push { local, remote } => {
@@ -257,6 +261,7 @@ impl DeviceOperation {
         match self {
             O::GetProps => Some("getprop".into()),
             O::GetKernel => Some("uname -r".into()),
+            O::GetSelinuxMode => Some("getenforce".into()),
             O::GetMeminfo => Some("cat /proc/meminfo".into()),
             O::GetDiskUsage { path } => Some(format!("df -m {}", quote_shell(path))),
             O::GetBattery => Some("dumpsys battery".into()),
@@ -385,6 +390,7 @@ impl DeviceOperation {
             O::ListPackages { .. }
             | O::GetProps
             | O::GetKernel
+            | O::GetSelinuxMode
             | O::GetMeminfo
             | O::GetDiskUsage { .. }
             | O::GetBattery

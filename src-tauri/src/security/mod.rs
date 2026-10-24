@@ -7,6 +7,7 @@
 //!   does not know is `Unknown` — the UI must then warn, never guess.
 
 pub mod risk;
+pub mod shell_risk;
 
 use crate::error::{AppError, ErrorCode};
 
@@ -72,7 +73,9 @@ pub fn validate_host(host: &str) -> Result<(), AppError> {
 /// bytes, sane length. (We do not sandbox the local FS: this is a local
 /// desktop tool and the user is trusted on their own machine.)
 pub fn validate_local_path(path: &str) -> Result<(), AppError> {
+    // A leading '-' would be parsed by adb/scrcpy as an option, not a path.
     let ok = !path.is_empty()
+        && !path.starts_with('-')
         && path.len() <= 4096
         && !path.contains('\0')
         && !path.chars().any(|c| (c as u32) < 0x20 || c == '\u{7f}');
@@ -103,6 +106,85 @@ pub fn validate_device_path(path: &str) -> Result<(), AppError> {
             format!("invalid device path: {path:?}"),
         ))
     }
+}
+
+/// Collapses `//`, `/./` and trailing slashes so that `/sdcard/`, `//sdcard`
+/// and `/sdcard/.` are all compared as `/sdcard`. `..` never reaches this
+/// function because `validate_device_path` rejects it first.
+pub fn normalize_device_path(path: &str) -> String {
+    let parts: Vec<&str> = path
+        .split('/')
+        .filter(|seg| !seg.is_empty() && *seg != ".")
+        .collect();
+    format!("/{}", parts.join("/"))
+}
+
+/// Top-level locations that must never be the *target* of a delete or a
+/// rename-source, even with typed confirmation. Deleting their *contents*
+/// remains possible (e.g. `/sdcard/DCIM/Camera/IMG_1.jpg`).
+const PROTECTED_DEVICE_ROOTS: &[&str] = &[
+    "/",
+    "/sdcard",
+    "/storage",
+    "/storage/emulated",
+    "/storage/emulated/0",
+    "/storage/self",
+    "/storage/self/primary",
+    "/mnt",
+    "/mnt/sdcard",
+    "/mnt/user",
+    "/data",
+    "/data/data",
+    "/data/app",
+    "/data/user",
+    "/data/user/0",
+    "/data/media",
+    "/data/local",
+    "/data/local/tmp",
+    "/system",
+    "/system_ext",
+    "/vendor",
+    "/product",
+    "/odm",
+    "/apex",
+    "/oem",
+    "/cache",
+    "/config",
+    "/etc",
+    "/efs",
+    "/persist",
+    "/metadata",
+    "/sdcard/Android",
+    "/storage/emulated/0/Android",
+];
+
+/// Pseudo filesystems where a mutation is never a legitimate action of this tool.
+const PROTECTED_DEVICE_PREFIXES: &[&str] = &["/proc", "/sys", "/dev"];
+
+pub fn is_protected_device_path(path: &str) -> bool {
+    let norm = normalize_device_path(path);
+    if PROTECTED_DEVICE_ROOTS.contains(&norm.as_str()) {
+        return true;
+    }
+    PROTECTED_DEVICE_PREFIXES
+        .iter()
+        .any(|p| norm == *p || norm.starts_with(&format!("{p}/")))
+}
+
+/// Validates a device path that is about to be removed or moved away.
+/// Applies [`validate_device_path`] plus the protected-location denylist.
+pub fn validate_mutable_device_path(path: &str) -> Result<(), AppError> {
+    validate_device_path(path)?;
+    if is_protected_device_path(path) {
+        return Err(AppError::new(
+            ErrorCode::OperationRejected,
+            format!(
+                "protected location, refusing to delete or move: {}",
+                normalize_device_path(path)
+            ),
+        ));
+    }
+    Ok(())
 }
 
 /// Fastboot partition names: identifier-like.
@@ -219,10 +301,67 @@ mod tests {
     }
 
     #[test]
+    fn protected_device_paths_are_rejected_for_mutation() {
+        for bad in [
+            "/",
+            "//",
+            "/sdcard",
+            "/sdcard/",
+            "//sdcard//",
+            "/sdcard/.",
+            "/storage/emulated/0",
+            "/storage/emulated/0/",
+            "/data",
+            "/data/data",
+            "/system",
+            "/proc",
+            "/proc/1/mem",
+            "/sys/class",
+            "/dev/block",
+            "/sdcard/Android",
+        ] {
+            let err =
+                validate_mutable_device_path(bad).expect_err(&format!("{bad:?} must be protected"));
+            assert_eq!(err.code, ErrorCode::OperationRejected, "{bad:?}");
+        }
+    }
+
+    #[test]
+    fn contents_of_protected_roots_remain_mutable() {
+        for ok in [
+            "/sdcard/DCIM/Camera/IMG_0001.jpg",
+            "/sdcard/Download",
+            "/sdcard/my folder/file name.txt",
+            "/data/local/tmp/app.apk",
+            "/storage/emulated/0/Download/x.zip",
+            "/sdcard/Android/data/com.example/cache",
+        ] {
+            assert!(validate_mutable_device_path(ok).is_ok(), "{ok:?}");
+        }
+    }
+
+    #[test]
+    fn mutable_path_still_requires_basic_validation() {
+        assert_eq!(
+            validate_mutable_device_path("sdcard/x").unwrap_err().code,
+            ErrorCode::InvalidPath
+        );
+        assert_eq!(
+            validate_mutable_device_path("/sdcard/../data")
+                .unwrap_err()
+                .code,
+            ErrorCode::InvalidPath
+        );
+    }
+
+    #[test]
     fn local_paths() {
         assert!(validate_local_path("/home/user/Downloads/app.apk").is_ok());
         assert!(validate_local_path("").is_err());
         assert!(validate_local_path("/a\0b").is_err());
+        assert!(validate_local_path("-r").is_err());
+        assert!(validate_local_path("--sync").is_err());
+        assert!(validate_local_path("./-r").is_ok());
     }
 
     #[test]

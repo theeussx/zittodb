@@ -13,6 +13,7 @@ pub mod error;
 pub mod fastboot;
 pub mod processes;
 pub mod reports;
+pub mod scanner;
 pub mod scrcpy;
 pub mod security;
 pub mod storage;
@@ -39,6 +40,7 @@ pub fn run() {
 
     let audit = Arc::new(AuditLog::open(&dirs.config, initial.audit_enabled));
     let history = Arc::new(DeviceHistory::open(&dirs.data));
+    let scans = Arc::new(storage::scans::ScanStore::open(&dirs.data));
 
     let state = AppState {
         dirs,
@@ -51,6 +53,7 @@ pub fn run() {
         transfers: Arc::new(TransferManager::new()),
         audit,
         history,
+        scans,
         coordinator: Arc::new(Coordinator::new()),
     };
 
@@ -97,6 +100,14 @@ pub fn run() {
             commands::scrcpy::recording_filename,
             // shell
             commands::shell::shell_open,
+            // scanner
+            commands::scanner::scan_run,
+            commands::scanner::scan_history,
+            commands::scanner::scan_get,
+            commands::scanner::scan_delete,
+            commands::scanner::scan_export,
+            commands::scanner::scan_compare,
+            commands::shell::shell_classify,
             commands::shell::shell_write,
             commands::shell::shell_close,
             commands::shell::shell_close_all,

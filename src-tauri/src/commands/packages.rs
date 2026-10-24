@@ -154,6 +154,9 @@ pub async fn package_extract(
         .ok_or_else(|| {
             AppError::new(ErrorCode::ProcessFailed, format!("no APK found for {pkg}"))
         })?;
+    // The path comes from the DEVICE's output: validate it like any input so a
+    // hostile or odd reply (e.g. "-x") can never become an adb option.
+    crate::security::validate_device_path(&apk)?;
 
     // 2. Pull it.
     let dir = match dest_dir {
@@ -177,6 +180,11 @@ pub async fn package_extract(
     }
 
     let dest_s = dest.to_string_lossy().to_string();
+    let audit_serial = serial.clone();
+    let audit_cmd = format!(
+        "adb -s {serial} pull {apk} {}",
+        super::audit_basename(&dest_s)
+    );
     let h = blocking(move || {
         let out = crate::processes::run_captured(
             &adb,
@@ -192,6 +200,18 @@ pub async fn package_extract(
         }
         Ok(())
     });
-    join(h).await?;
+    let res = join(h).await;
+    let result = match &res {
+        Ok(()) => "ok".to_string(),
+        Err(e) => format!("error:{}", e.code.as_str()),
+    };
+    super::audit_event(
+        &st.audit,
+        Some(audit_serial),
+        "package_extract",
+        audit_cmd,
+        result,
+    );
+    res?;
     Ok(dest.to_string_lossy().to_string())
 }

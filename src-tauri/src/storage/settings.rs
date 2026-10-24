@@ -6,8 +6,8 @@ use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 
-use crate::error::{AppError, ErrorCode};
 use super::{ensure_private_dir, ensure_private_file};
+use crate::error::{AppError, ErrorCode};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default, rename_all = "camelCase")]

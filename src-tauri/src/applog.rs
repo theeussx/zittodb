@@ -6,12 +6,12 @@
 //!   contain user data — `sanitize` scrubs known sensitive patterns;
 //! - plain append-only file, no rotation beyond a simple size cap.
 
-use std::fs::{self, File, OpenOptions};
+use crate::storage::{ensure_private_dir, ensure_private_file};
+use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::storage::{ensure_private_dir, ensure_private_file};
 
 const MAX_FILE_BYTES: u64 = 2 * 1024 * 1024; // 2 MB, then start over
 

@@ -11,8 +11,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use crate::devices::Device;
 use super::{ensure_private_dir, ensure_private_file};
+use crate::devices::Device;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
@@ -104,17 +104,23 @@ impl DeviceHistory {
                 "alias too long (maximum 80 characters)",
             ));
         }
-        if tags.len() > 12 || tags.iter().any(|tag| tag.is_empty() || tag.chars().count() > 32) {
+        if tags.len() > 12
+            || tags
+                .iter()
+                .any(|tag| tag.is_empty() || tag.chars().count() > 32)
+        {
             return Err(crate::error::AppError::new(
                 crate::error::ErrorCode::InvalidArgument,
                 "invalid tags (maximum 12 tags of 32 characters)",
             ));
         }
         let mut map = self.cache.lock().unwrap();
-        let entry = map.entry(serial.to_string()).or_insert_with(|| HistoryEntry {
-            serial: serial.to_string(),
-            ..Default::default()
-        });
+        let entry = map
+            .entry(serial.to_string())
+            .or_insert_with(|| HistoryEntry {
+                serial: serial.to_string(),
+                ..Default::default()
+            });
         entry.alias = alias.filter(|v| !v.trim().is_empty());
         entry.tags = tags;
         entry.favorite = favorite;

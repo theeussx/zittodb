@@ -21,7 +21,7 @@ use std::time::{Duration, Instant};
 use crate::error::{AppError, ErrorCode};
 
 pub use logcat::{validate_logcat_spec, LogcatManager};
-pub use shell::ShellManager;
+pub use shell::{validate_shell_line, ShellManager};
 pub use transfer::{remote_file_size, TransferEvent, TransferManager};
 
 /// Result of a captured (short-lived) process run.
@@ -220,6 +220,20 @@ impl StreamHandle {
         }
     }
 
+    /// Exit code once the child has terminated on its own (`None` while it is
+    /// running, or after `stop()` took the child). A signal-terminated child
+    /// reports `-1`. `std` caches the status after the first reap, so this is
+    /// safe to call repeatedly and after `is_alive()`.
+    pub fn exit_code(&self) -> Option<i32> {
+        let Ok(mut guard) = self.child.lock() else {
+            return None;
+        };
+        match guard.as_mut()?.try_wait() {
+            Ok(Some(status)) => Some(status.code().unwrap_or(-1)),
+            _ => None,
+        }
+    }
+
     pub fn pid(&self) -> Option<u32> {
         let Ok(guard) = self.child.lock() else {
             return None;
@@ -286,18 +300,23 @@ pub fn spawn_streamed(
     }))
 }
 
+/// Delivers every `\n`-terminated chunk of `reader` to `on_line`.
+///
+/// Works on raw bytes and converts lossily: logcat and shell output may contain
+/// invalid UTF-8, and the previous `read_line` implementation stopped reading
+/// at the first such byte, which silently ended the stream and left the child
+/// blocked on a full pipe.
 fn pump_lines<R: Read>(reader: R, mut on_line: impl FnMut(String)) {
     use std::io::BufRead;
     let mut buf = std::io::BufReader::new(reader);
-    let mut line = String::new();
+    let mut bytes: Vec<u8> = Vec::new();
     loop {
-        line.clear();
-        match buf.read_line(&mut line) {
+        bytes.clear();
+        match buf.read_until(b'\n', &mut bytes) {
             Ok(0) => break,
-            Ok(_) => {
-                // Keep the trailing newline so terminals render correctly.
-                on_line(std::mem::take(&mut line));
-            }
+            // Keep the trailing newline so terminals render correctly.
+            Ok(_) => on_line(String::from_utf8_lossy(&bytes).into_owned()),
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
             Err(_) => break,
         }
     }
@@ -514,5 +533,36 @@ mod tests {
         assert!(reg.is_running("t1"));
         reg.stop("t1").expect("stop");
         assert!(!reg.is_running("t1"));
+    }
+
+    #[test]
+    fn pump_lines_survives_invalid_utf8() {
+        let data: &[u8] = b"first\nbad \xff\xfe bytes\nlast\n";
+        let mut got = Vec::new();
+        pump_lines(data, |l| got.push(l));
+        assert_eq!(got.len(), 3, "stream must not stop at invalid UTF-8");
+        assert_eq!(got[0], "first\n");
+        assert!(got[1].contains('\u{fffd}'));
+        assert_eq!(got[2], "last\n");
+    }
+
+    #[test]
+    fn exit_code_is_reported_after_the_child_ends() {
+        let h = spawn_streamed(
+            "/bin/sh",
+            &["-c".into(), "exit 7".into()],
+            "t",
+            false,
+            std::sync::Arc::new(|_l: String| {}),
+        )
+        .unwrap();
+        for _ in 0..100 {
+            if !h.is_alive() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        assert_eq!(h.exit_code(), Some(7));
+        assert_eq!(h.exit_code(), Some(7), "status stays available");
     }
 }

@@ -5,6 +5,7 @@
 
 pub mod audit;
 pub mod history;
+pub mod scans;
 pub mod settings;
 
 use std::path::PathBuf;
